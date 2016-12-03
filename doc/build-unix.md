@@ -30,20 +30,23 @@ Dependencies
 
 These dependencies are required:
 
- Library     | Purpose          | Description
- ------------|------------------|----------------------
- libssl      | SSL Support      | Secure communications
- libboost    | Boost            | C++ Library
-
+ Library            | Purpose          | Description
+ -------------------|------------------|----------------------
+ libssl-dev         | SSL Support      | Secure communications
+ libboost-all-dev   | Boost            | C++ Library
+ libdb++-dev        |                  |
+ 
 Optional dependencies:
 
- Library     | Purpose          | Description
- ------------|------------------|----------------------
- miniupnpc   | UPnP Support     | Firewall-jumping support
- libdb4.8    | Berkeley DB      | Wallet storage (only needed when wallet enabled)
- qt          | GUI              | GUI toolkit (only needed when GUI enabled)
- protobuf    | Payments in GUI  | Data interchange format used for payment protocol (only needed when GUI enabled)
- libqrencode | QR codes in GUI  | Optional for generating QR codes (only needed when GUI enabled)
+ Library            | Purpose          | Description
+ -------------------|------------------|----------------------
+ git                | GitHub           | For easily retrieving the sourcecode
+ libminiupnpc-dev   | UPnP Support     | Firewall-jumping support
+ libdb4.8           | Berkeley DB      | Wallet storage (only needed when wallet enabled)
+ qtbase5-dev        | GUI              | GUI toolkit (only needed when GUI enabled)
+ qttools5-dev-tools | GUI              | GUI toolkit (only needed when GUI enabled)
+ protobuf-compiler  | Payments in GUI  | Data interchange format used for payment protocol (only needed when GUI enabled)
+ libqrencode-dev    | QR codes in GUI  | Optional for generating QR codes (only needed when GUI enabled)
 
 For the versions used in the release, see [release-process.md](release-process.md) under *Fetch and build inputs*.
 
