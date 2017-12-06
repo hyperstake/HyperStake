@@ -394,6 +394,7 @@ isEmpty(BDB_LIB_SUFFIX) {
 
 isEmpty(BDB_INCLUDE_PATH) {
     macx:BDB_INCLUDE_PATH = /opt/local/include/db48
+    unix:BDB_INCLUDE_PATH = /usr/include/db4.8
 }
 
 isEmpty(BOOST_LIB_PATH) {
