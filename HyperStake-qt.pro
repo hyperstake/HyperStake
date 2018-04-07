@@ -348,7 +348,8 @@ FORMS += \
     src/qt/forms/bip38tooldialog.ui \	
     src/qt/forms/votingdialog.ui \
     src/qt/forms/createproposaldialog.ui \
-    src/qt/forms/proposalsdialog.ui
+    src/qt/forms/proposalsdialog.ui \
+    src/qt/forms/setvotesdialog.ui
 
 contains(USE_QRCODE, 1) {
     HEADERS += src/qt/qrcodedialog.h

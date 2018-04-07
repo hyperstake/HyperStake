@@ -24,6 +24,7 @@ QT_FORMS_UI = \
   qt/forms/rpcconsole.ui \
   qt/forms/sendcoinsdialog.ui \
   qt/forms/sendcoinsentry.ui \
+  qt/forms/setvotesdialog.ui \
   qt/forms/signverifymessagedialog.ui \
   qt/forms/transactiondescdialog.ui \
   qt/forms/votingdialog.ui
@@ -63,6 +64,7 @@ QT_MOC_CPP = \
   qt/moc_rpcconsole.cpp \
   qt/moc_sendcoinsdialog.cpp \
   qt/moc_sendcoinsentry.cpp \
+  qt/moc_setvotesdialog.cpp \
   qt/moc_signverifymessagedialog.cpp \
   qt/moc_transactiondesc.cpp \
   qt/moc_transactiondescdialog.cpp \
@@ -123,6 +125,7 @@ BITCOIN_QT_H = \
   qt/scicon.h \
   qt/sendcoinsdialog.h \
   qt/sendcoinsentry.h \
+  qt/setvotesdialog.h \
   qt/signverifymessagedialog.h \
   qt/transactiondesc.h \
   qt/transactiondescdialog.h \
@@ -205,6 +208,7 @@ BITCOIN_QT_CPP = \
   qt/qvaluecombobox.cpp \
   qt/rpcconsole.cpp \
   qt/scicon.cpp \
+  qt/setvotesdialog.cpp \
   qt/walletmodel.cpp \
   qt/votingdialog.cpp
 

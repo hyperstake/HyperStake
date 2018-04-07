@@ -2,6 +2,7 @@
 #include "ui_votingdialog.h"
 #include "createproposaldialog.h"
 #include "proposalsdialog.h"
+#include "setvotesdialog.h"
 
 VotingDialog::VotingDialog(QWidget* parent) :
     QDialog(parent),
@@ -10,6 +11,7 @@ VotingDialog::VotingDialog(QWidget* parent) :
     ui->setupUi(this);
     proposalsDialog = new ProposalsDialog(this);
     createProposalDialog = new CreateProposalDialog(this);
+    setVotesDialog = new SetVotesDialog(this);
 }
 
 VotingDialog::~VotingDialog()
@@ -21,7 +23,7 @@ void VotingDialog::SetWalletModel(WalletModel *model)
 {
     walletModel = model;
     createProposalDialog->SetWalletModel(model);
-    //votesDialog->SetWalletModel(model);
+    setVotesDialog->SetWalletModel(model);
     proposalsDialog->SetWalletModel(model);
 }
 
@@ -33,9 +35,11 @@ void VotingDialog::on_button_CreateProposal_clicked()
 void VotingDialog::on_button_ViewProposals_clicked()
 {
     proposalsDialog->show();
+    proposalsDialog->UpdateTable();
 }
 
 void VotingDialog::on_button_SetVotes_clicked()
 {
-    //votesDialog->show();
+    setVotesDialog->show();
+    setVotesDialog->UpdateTable();
 }

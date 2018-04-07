@@ -28,7 +28,7 @@ void ProposalsDialog::SetWalletModel(WalletModel *model)
 void ProposalsDialog::UpdateTable()
 {
     int columns = 12;
-    int rows = mapProposals.size();
+    int rows = 0;
     QStandardItemModel* model = new QStandardItemModel(rows, columns, this);
     model->setHorizontalHeaderItem(0, new QStandardItem(QString("Name")));
     model->setHorizontalHeaderItem(1, new QStandardItem(QString("Abstract")));

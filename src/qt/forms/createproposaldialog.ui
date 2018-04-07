@@ -13,149 +13,139 @@
   <property name="windowTitle">
    <string>Proposal Creation</string>
   </property>
-  <widget class="QWidget" name="verticalLayoutWidget">
-   <property name="geometry">
-    <rect>
-     <x>10</x>
-     <y>10</y>
-     <width>641</width>
-     <height>278</height>
-    </rect>
-   </property>
-   <layout class="QVBoxLayout" name="verticalLayout">
-    <item>
-     <layout class="QFormLayout" name="formLayout">
-      <item row="0" column="0">
-       <widget class="QLabel" name="label_ProposalName">
-        <property name="text">
-         <string>Proposal Name:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="1">
-       <widget class="QLineEdit" name="lineEdit_Name"/>
-      </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="label_Abstract">
-        <property name="text">
-         <string>Proposal Abstract:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="1">
-       <widget class="QLineEdit" name="lineEdit_Abstract"/>
-      </item>
-      <item row="2" column="0">
-       <widget class="QLabel" name="label_StartBlock">
-        <property name="text">
-         <string>Starting Block:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="1">
-       <widget class="QLineEdit" name="lineEdit_StartBlock"/>
-      </item>
-      <item row="3" column="0">
-       <widget class="QLabel" name="label_Length">
-        <property name="text">
-         <string>Voting Length (blocks):</string>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="1">
-       <widget class="QLineEdit" name="lineEdit_Length"/>
-      </item>
-      <item row="4" column="0">
-       <widget class="QLabel" name="label_Hash">
-        <property name="text">
-         <string>Proposal Hash:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="1">
-       <widget class="QLabel" name="label_Hash_result">
-        <property name="text">
-         <string>(Automatically Generated)</string>
-        </property>
-       </widget>
-      </item>
-      <item row="5" column="0">
-       <widget class="QLabel" name="label_Location">
-        <property name="text">
-         <string>Bit Location:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="5" column="1">
-       <widget class="QLabel" name="label_Location_result">
-        <property name="text">
-         <string>(Automatically Generated)</string>
-        </property>
-       </widget>
-      </item>
-      <item row="6" column="0">
-       <widget class="QLabel" name="label_Size">
-        <property name="text">
-         <string>Bit Size:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="6" column="1">
-       <widget class="QLabel" name="label_Size_result">
-        <property name="text">
-         <string>(Automatically Generated)</string>
-        </property>
-       </widget>
-      </item>
-      <item row="7" column="0">
-       <widget class="QLabel" name="label_Fee">
-        <property name="text">
-         <string>Fee:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="7" column="1">
-       <widget class="QLabel" name="label_Fee_result">
-        <property name="text">
-         <string>(Automatically Generated)</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </item>
-    <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_3">
-      <item>
-       <widget class="QPushButton" name="button_CreateProposal">
-        <property name="text">
-         <string>Create Proposal</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="button_SendProposal">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-        <property name="text">
-         <string>Send Proposal</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </item>
-    <item>
-     <widget class="QDialogButtonBox" name="buttonBox">
-      <property name="orientation">
-       <enum>Qt::Horizontal</enum>
-      </property>
-      <property name="standardButtons">
-       <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
-      </property>
-     </widget>
-    </item>
-   </layout>
-  </widget>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <layout class="QFormLayout" name="formLayout">
+     <item row="0" column="0">
+      <widget class="QLabel" name="label_ProposalName">
+       <property name="text">
+        <string>Proposal Name:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QLineEdit" name="lineEdit_Name"/>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="label_Abstract">
+       <property name="text">
+        <string>Proposal Abstract:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QLineEdit" name="lineEdit_Abstract"/>
+     </item>
+     <item row="2" column="0">
+      <widget class="QLabel" name="label_StartBlock">
+       <property name="text">
+        <string>Starting Block:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="QLineEdit" name="lineEdit_StartBlock"/>
+     </item>
+     <item row="3" column="0">
+      <widget class="QLabel" name="label_Length">
+       <property name="text">
+        <string>Voting Length (blocks):</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <widget class="QLineEdit" name="lineEdit_Length"/>
+     </item>
+     <item row="4" column="0">
+      <widget class="QLabel" name="label_Hash">
+       <property name="text">
+        <string>Proposal Hash:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="1">
+      <widget class="QLabel" name="label_Hash_result">
+       <property name="text">
+        <string>(Automatically Generated)</string>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="0">
+      <widget class="QLabel" name="label_Location">
+       <property name="text">
+        <string>Bit Location:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="1">
+      <widget class="QLabel" name="label_Location_result">
+       <property name="text">
+        <string>(Automatically Generated)</string>
+       </property>
+      </widget>
+     </item>
+     <item row="6" column="0">
+      <widget class="QLabel" name="label_Size">
+       <property name="text">
+        <string>Bit Size:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="6" column="1">
+      <widget class="QLabel" name="label_Size_result">
+       <property name="text">
+        <string>(Automatically Generated)</string>
+       </property>
+      </widget>
+     </item>
+     <item row="7" column="0">
+      <widget class="QLabel" name="label_Fee">
+       <property name="text">
+        <string>Fee:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="7" column="1">
+      <widget class="QLabel" name="label_Fee_result">
+       <property name="text">
+        <string>(Automatically Generated)</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_3">
+     <item>
+      <widget class="QPushButton" name="button_CreateProposal">
+       <property name="text">
+        <string>Create Proposal</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="button_SendProposal">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="text">
+        <string>Send Proposal</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+     </property>
+    </widget>
+   </item>
+  </layout>
  </widget>
  <resources/>
  <connections>

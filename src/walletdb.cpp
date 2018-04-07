@@ -60,7 +60,7 @@ bool CWalletDB::ReadVoteObject(const string& strVoteObject, CVoteObject& voteObj
 
 bool CWalletDB::WriteVoteObject(const string& strVoteObject, const CVoteObject& voteObject)
 {
-    return Write(make_pair(string("vote"), strVoteObject), voteObject);
+    return Write(make_pair(string("vote"), strVoteObject), voteObject, true);
 }
 
 int64 CWalletDB::GetAccountCreditDebit(const string& strAccount)

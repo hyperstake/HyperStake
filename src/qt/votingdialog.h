@@ -6,7 +6,7 @@
 
 class CreateProposalDialog;
 class ProposalsDialog;
-//class MyVotesDialog;
+class SetVotesDialog;
 class WalletModel;
 
 namespace Ui {
@@ -29,8 +29,8 @@ public slots:
 private:
     Ui::VotingDialog *ui;
     CreateProposalDialog* createProposalDialog;
-    //MyVotesDialog* votesDialog;
     ProposalsDialog* proposalsDialog;
+    SetVotesDialog* setVotesDialog;
     WalletModel* walletModel;
 };
 
