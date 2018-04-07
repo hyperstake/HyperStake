@@ -4186,7 +4186,7 @@ CBlock* CreateNewBlock(CWallet* pwallet, bool fProofOfStake)
 
     //Check to see if proposals need to be voted on
     if (mapProposals.size() > 0) {
-        list<int32_t> votes;
+        list<uint32_t> votes;
 
         // Get all the vote objects versions
         map<uint256, VoteLocation> mapActiveProposals = proposalManager.GetActive(nBestHeight);
@@ -4215,7 +4215,7 @@ CBlock* CreateNewBlock(CWallet* pwallet, bool fProofOfStake)
                 }
 
                 if (pwalletMain->mapVoteObjects.count(proposal.GetHash()) == 0) {
-                    printf("*** mapVoteObjects does not have proposal hash\n");
+                    //printf("*** mapVoteObjects does not have proposal hash\n");
                     continue;
                 }
 
@@ -4227,10 +4227,12 @@ CBlock* CreateNewBlock(CWallet* pwallet, bool fProofOfStake)
             printf("*** mapVoteObjects empty!\n");
 
         // Update the block version to have all votes
-        for (int32_t vote : votes) {
+        for (uint32_t vote : votes) {
             pblock->nVersion |= vote;
-            //printf("***voted!\n");
+
         }
+    } else {
+        printf("map proposals empty\n");
     }
 
     // Create coinbase tx
@@ -4646,7 +4648,7 @@ void BitcoinMiner(CWallet *pwallet, bool fProofOfStake)
 
         fWalletStaking = false;
 
-        while (vNodes.empty() || IsInitialBlockDownload() || pwallet->IsLocked()  ||  !fMintableCoins)
+        while (/*vNodes.empty() || IsInitialBlockDownload() || */pwallet->IsLocked()  ||  !fMintableCoins)
         {
             nLastCoinStakeSearchInterval = 0;
             Sleep(1000);

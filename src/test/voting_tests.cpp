@@ -129,13 +129,22 @@ BOOST_AUTO_TEST_CASE(vote_tally)
 
 BOOST_AUTO_TEST_CASE(vote_charset)
 {
-    std::string someString;
-    std::vector<unsigned char> vch;
-    BOOST_CHECK_MESSAGE(ConvertTo6bit("test proposal text", vch), "6 bit character conversion failed");
-    cout << "converted string: " << ReverseEndianString(HexStr(vch)) << endl;
-    BOOST_CHECK_MESSAGE(ConvertTo8bit(vch, someString), "failed to deconvert");
+//    std::string someString;
+//    std::vector<unsigned char> vch;
+//    BOOST_CHECK_MESSAGE(ConvertTo6bit("test proposal text", vch), "6 bit character conversion failed");
+//    cout << "converted string: " << ReverseEndianString(HexStr(vch)) << endl;
+//    BOOST_CHECK_MESSAGE(ConvertTo8bit(vch, someString), "failed to deconvert");
+//
+//    cout << "deconverted string: " << someString << endl;
 
-    cout << "deconverted string: " << someString << endl;
+        uint32_t nVersion = 0x50000000;
+        uint32_t nVote = 2;
+        uint256 hash;
+        CVoteObject vote(hash, 2, 28);
+        vote.Vote(nVote);
+
+        nVersion |= (vote.GetFormattedVote() >> 1);
+        cout << "version: " << nVersion << endl;
 }
 
 BOOST_AUTO_TEST_SUITE_END()

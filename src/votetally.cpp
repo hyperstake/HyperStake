@@ -81,8 +81,8 @@ void CVoteTally::ProcessNewVotes(const uint32_t& nVersion)
         VoteLocation location = mapLocations.at(it.first);
         int32_t nVote = nVersion;
         nVote &= VOTEMASK; // remove version bits
-        nVote >>= location.first; //shift it over to the starting position
-        int32_t nBits = location.first - location.second;
+        nVote >>= location.second - 1; //shift it over to the starting position
+        int32_t nBits = location.first - location.second + 1;
 
         // Remove any bits to the left of the vote bits
         uint32_t nMask = ~0;
@@ -92,7 +92,7 @@ void CVoteTally::ProcessNewVotes(const uint32_t& nVersion)
         //Count the vote if it is yes or no
         if (nVote == 1) {
             mapVotes.at(it.first).nYesTally++;
-        } else if (nVote > 1)
+        } else if (nVote == 2)
             mapVotes.at(it.first).nNoTally++;
         printf("%s: nVote=%d\n", __func__, nVote);
     }

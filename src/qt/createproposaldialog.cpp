@@ -73,10 +73,10 @@ void CreateProposalDialog::on_button_CreateProposal_clicked()
         msg.exec();
         return;
     }
-    ui->label_Location_result->setText(QString::number(location.first));
+    ui->label_Location_result->setText(QString::number(location.second));
 
     //Create the actual proposal
-    this->proposal = new CVoteProposal(strName.toStdString(), location.first, nStartHeight, nCheckSpan, nBitCount, strAbstract.toStdString());
+    this->proposal = new CVoteProposal(strName.toStdString(), location.second - 1, nStartHeight, nCheckSpan, nBitCount, strAbstract.toStdString());
 
     //Set proposal hash in dialog
     uint256 hashProposal = proposal->GetHash();

@@ -2949,11 +2949,11 @@ Value getvote(const Array& params, bool fHelp)
     //Get params
     uint256 txHash(params[0].get_str());
 
-    CWalletTx walletTx;
-    if(!pwalletMain->GetTransaction(txHash, walletTx))
+    CTransaction tx;
+    uint256 hashBlock;
+    if (!GetTransaction(txHash, tx, hashBlock))
         return "Transaction not found in wallet";
 
-    CTransaction tx = *(CTransaction *) &walletTx;
     if (!tx.IsProposal())
         return "Transaction does not contain a proposal";
 
@@ -2968,9 +2968,10 @@ Value getvote(const Array& params, bool fHelp)
         CVoteObject voteObject;
         voteObject = pwalletMain->mapVoteObjects[proposalHash];
 
-        int voteValue = voteObject.GetFormattedVote() >> proposal.GetShift() & proposal.GetBitCount();
+        int voteValue = voteObject.GetVote();
 
         Object ret;
+        ret.push_back(Pair("Proposal Name", proposal.GetName()));
         ret.push_back(Pair("Proposal Name", proposal.GetName()));
         ret.push_back(Pair("Proposal Description", proposal.GetDescription()));
         ret.push_back(Pair("Your Vote", voteValue));

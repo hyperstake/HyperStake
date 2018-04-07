@@ -60,6 +60,7 @@ map<uint256, VoteLocation> CVoteProposalManager::GetActive(int nHeight)
 
 bool CVoteProposalManager::GetNextLocation(int nBitCount, int nStartHeight, int nCheckSpan, VoteLocation& location)
 {
+    //Conflicts for block range
     vector<CProposalMetaData> vConflictingTime;
     for (auto it : mapProposalData) {
         CProposalMetaData data = it.second;
@@ -74,44 +75,32 @@ bool CVoteProposalManager::GetNextLocation(int nBitCount, int nStartHeight, int 
     //Find an open location for the new proposal, return left most bits
     if (vConflictingTime.empty()) {
         location.first = 28;
-        location.second = location.first - nBitCount;
+        location.second = (uint8_t)(location.first - nBitCount + 1);
         return true;
     }
 
     //create a vector tracking available spots
-    vector<int> vAvailable;
-    for (int i = 0; i < 28; i++)
-        vAvailable.emplace_back(i + 1);
+    vector<int> vAvailable(29, 1);
 
     //remove spots that are already taken
     for (auto data : vConflictingTime) {
-        int n = data.location.first;
-        while (n >= data.location.second) {
-            auto it = std::find(vAvailable.begin(), vAvailable.end(), n);
-            if (it != vAvailable.end())
-                vAvailable.erase(it);
-            n--;
+        printf("location.first=%d location.second=%d\n", location.first, location.second);
+        for (int i = data.location.first; i >= data.location.second; i--) {
+            printf("mark %d as 0\n", i);
+            vAvailable.at(i) = 0;
         }
     }
 
     //find an available sequence of bits that fit the proposal
-    int nPrev = 0;
-    int nSequenceStart = 0;
-    for (auto n : vAvailable) {
-        //See if the previous is in sequence
-        if (nPrev) {
-            if (n - 1 == nPrev)
-                nSequenceStart = n;
-            else
-                nSequenceStart = 0;
-
-            if (n - nSequenceStart >= nBitCount) {
-                location.first = nSequenceStart;
-                location.second = nSequenceStart - nBitCount;
-                return true;
-            }
+    vector<int> vRange;
+    int nSequential = 0;
+    for (uint8_t i = 28; i > 0; i--) {
+        nSequential = vAvailable.at(i) == 1 ? nSequential + 1 : 0;
+        if (nSequential == nBitCount) {
+            location.second = i;
+            location.first = (uint8_t )(i + nBitCount - 1);
+            return true;
         }
-        nPrev = n;
     }
     return false;
 }

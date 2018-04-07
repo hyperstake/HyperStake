@@ -54,10 +54,8 @@ public:
     )
 
     bool Vote(int nVotersChoice);
-    uint32_t GetVoteFromVersion(uint32_t nVersion);
-    uint32_t GetFormattedVote() { return nFormattedVote; }
+    uint32_t GetFormattedVote() { return (nChoice << nShift); }
     uint32_t GetVote() { return nChoice; }
-    uint256 GetProposal() { return hashProposal; }
 };
 
 #endif //HYPERSTAKE_VOTEOBJECT_H
