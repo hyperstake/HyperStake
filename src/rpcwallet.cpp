@@ -2909,7 +2909,7 @@ Value setvote(const Array& params, bool fHelp)
     if (!ProposalFromTransaction(tx, proposal))
         return "Proposal couldn't be found in the transaction";
 
-    CVoteObject voteObject(proposal.GetHash(), proposal.GetBitCount(), proposal.GetShift());
+    CVoteObject voteObject(proposal.GetHash(), proposal.GetLocation());
 
     voteObject.Vote(voteChoice);
 
@@ -2965,10 +2965,9 @@ Value getvote(const Array& params, bool fHelp)
 
     // Check to see if we have the vote object loaded from the database, if we do return the info
     if (pwalletMain->mapVoteObjects.count(proposalHash) != 0) {
-        CVoteObject voteObject;
-        voteObject = pwalletMain->mapVoteObjects[proposalHash];
+        CVoteObject voteObject = pwalletMain->mapVoteObjects[proposalHash];
 
-        int voteValue = voteObject.GetVote();
+        int voteValue = voteObject.GetUnformattedVote();
 
         Object ret;
         ret.push_back(Pair("Proposal Name", proposal.GetName()));
@@ -2986,7 +2985,7 @@ Value getvote(const Array& params, bool fHelp)
     if (!walletdb.ReadVoteObject(proposal.GetHash().GetHex(), voteObject))
         return "No vote has been stored for this proposal ";
 
-    int voteValue = voteObject.GetFormattedVote() >> proposal.GetShift() & proposal.GetBitCount();
+    int voteValue = voteObject.GetUnformattedVote();
 
     Object ret;
     ret.push_back(Pair("Proposal Name", proposal.GetName()));
@@ -3042,7 +3041,7 @@ Value getvotes(const Array& params, bool fHelp)
             Object entry;
             entry.push_back(Pair("Proposal Name", proposal.GetName()));
             entry.push_back(Pair("Proposal Description", proposal.GetDescription()));
-            entry.push_back(Pair("Your Vote", (int64_t)it->second.GetVote()));
+            entry.push_back(Pair("Your Vote", (int64_t)it->second.GetUnformattedVote()));
             ret.push_back(entry);
         }
         return ret;

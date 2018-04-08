@@ -20,10 +20,10 @@ bool CVoteProposalManager::Add(const CVoteProposal& proposal)
     for (auto it : mapProposalData) {
         CProposalMetaData existingProposal = it.second;
         //Clear of any conflicts, starts after the existing proposal ends
-        if (newProposal.location.first < existingProposal.location.second)
+        if (newProposal.location.nMostSignificantBit < existingProposal.location.nLeastSignificantBit)
             continue;
         //Clear of any conflicts, ends before the existing proposal starts
-        if (newProposal.location.second > existingProposal.location.first)
+        if (newProposal.location.nLeastSignificantBit > existingProposal.location.nMostSignificantBit)
             continue;
         //Clear of any conflicts, there is not overlap in the voting period
         if (newProposal.nHeightStart > existingProposal.nHeightEnd || newProposal.nHeightEnd < existingProposal.nHeightStart)
@@ -74,19 +74,17 @@ bool CVoteProposalManager::GetNextLocation(int nBitCount, int nStartHeight, int 
 
     //Find an open location for the new proposal, return left most bits
     if (vConflictingTime.empty()) {
-        location.first = 28;
-        location.second = (uint8_t)(location.first - nBitCount + 1);
+        location.nMostSignificantBit = 27;
+        location.nLeastSignificantBit = (uint8_t)(location.nMostSignificantBit - nBitCount + 1);
         return true;
     }
 
     //create a vector tracking available spots
-    vector<int> vAvailable(29, 1);
+    vector<int> vAvailable(28, 1);
 
     //remove spots that are already taken
     for (auto data : vConflictingTime) {
-        printf("location.first=%d location.second=%d\n", location.first, location.second);
-        for (int i = data.location.first; i >= data.location.second; i--) {
-            printf("mark %d as 0\n", i);
+        for (int i = data.location.nMostSignificantBit; i >= data.location.nLeastSignificantBit; i--) {
             vAvailable.at(i) = 0;
         }
     }
@@ -94,11 +92,11 @@ bool CVoteProposalManager::GetNextLocation(int nBitCount, int nStartHeight, int 
     //find an available sequence of bits that fit the proposal
     vector<int> vRange;
     int nSequential = 0;
-    for (uint8_t i = 28; i > 0; i--) {
+    for (uint8_t i = 27; i >= 0; i--) {
         nSequential = vAvailable.at(i) == 1 ? nSequential + 1 : 0;
         if (nSequential == nBitCount) {
-            location.second = i;
-            location.first = (uint8_t )(i + nBitCount - 1);
+            location.nLeastSignificantBit = i;
+            location.nMostSignificantBit = (uint8_t )(i + nBitCount - 1);
             return true;
         }
     }

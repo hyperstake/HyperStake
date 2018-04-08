@@ -6,7 +6,7 @@
 #define HYPERSTAKE_VOTEPROPOSALMANAGER_H
 
 #include <set>
-#include "votetally.h"
+#include "voteobject.h"
 
 class CVoteProposal;
 

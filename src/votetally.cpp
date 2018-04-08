@@ -1,6 +1,7 @@
 #include "votetally.h"
 #include "util.h"
 #include "db.h"
+#include "voteobject.h"
 
 #define VOTEMASK 0x0FFFFFFF
 
@@ -81,8 +82,8 @@ void CVoteTally::ProcessNewVotes(const uint32_t& nVersion)
         VoteLocation location = mapLocations.at(it.first);
         int32_t nVote = nVersion;
         nVote &= VOTEMASK; // remove version bits
-        nVote >>= location.second - 1; //shift it over to the starting position
-        int32_t nBits = location.first - location.second + 1;
+        nVote >>= location.GetShift(); //shift it over to the starting position
+        int32_t nBits = location.GetBitCount();
 
         // Remove any bits to the left of the vote bits
         uint32_t nMask = ~0;

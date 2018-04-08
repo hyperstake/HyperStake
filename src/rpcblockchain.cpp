@@ -324,8 +324,11 @@ Value createproposal(const Array& params, bool fHelp)
     // description of issue - will go in different tx
     std::string strDescription = params[5].get_str();
 
+    // the bit location object of the proposal
+    VoteLocation location(nShift + nBits - 1, nShift);
+
     Object results;
-    CVoteProposal proposal(strName, nShift, nStartTime, nCheckSpan, nBits, strDescription);
+    CVoteProposal proposal(strName, nStartTime, nCheckSpan, strDescription, location);
 
     //! Add the constructed proposal to a partial transaction
     CTransaction tx;

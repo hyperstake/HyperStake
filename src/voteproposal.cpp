@@ -74,12 +74,3 @@ bool ProposalFromTransaction(const CTransaction& tx, CVoteProposal& proposal)
 
     return true;
 }
-
-VoteLocation CVoteProposal::GetLocation() const
-{
-    VoteLocation location;
-    location.second = static_cast<uint8_t>(GetShift() + 1);
-    location.first = static_cast<uint8_t>(GetShift() + nBitCount);
-
-    return location;
-}

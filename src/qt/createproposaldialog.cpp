@@ -4,6 +4,7 @@
 #include "main.h"
 #include "walletmodel.h"
 #include "voteproposal.h"
+#include "../voteobject.h"
 #include <QLineEdit>
 #include <QMessageBox>
 
@@ -73,10 +74,10 @@ void CreateProposalDialog::on_button_CreateProposal_clicked()
         msg.exec();
         return;
     }
-    ui->label_Location_result->setText(QString::number(location.second));
+    ui->label_Location_result->setText(QString::number(location.nLeastSignificantBit));
 
     //Create the actual proposal
-    this->proposal = new CVoteProposal(strName.toStdString(), location.second - 1, nStartHeight, nCheckSpan, nBitCount, strAbstract.toStdString());
+    this->proposal = new CVoteProposal(strName.toStdString(), nStartHeight, nCheckSpan, strAbstract.toStdString(), location);
 
     //Set proposal hash in dialog
     uint256 hashProposal = proposal->GetHash();

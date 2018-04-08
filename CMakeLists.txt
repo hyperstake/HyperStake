@@ -293,9 +293,9 @@ add_executable(HyperStake
         src/voteproposalmanager.h
         src/qt/createproposaldialog.cpp
         src/qt/createproposaldialog.h
-        src/votingdialog.cpp
+        src/qt/votingdialog.cpp
         src/qt/votingdialog.h
-        src/qt/votetally.cpp
+        src/votetally.cpp
         src/votetally.h
         src/wallet.cpp
         src/wallet.h

@@ -5,6 +5,8 @@
 #include "serialize.h"
 #include "uint256.h"
 
+class VoteLocation;
+
 class CVoteSummary
 {
 public:
@@ -30,7 +32,7 @@ public:
     )
 };
 
-typedef std::pair<uint8_t, uint8_t> VoteLocation;  //start bit, end bit
+//typedef std::pair<uint8_t, uint8_t> VoteLocation;  //start bit, end bit
 
 class CVoteTally
 {
@@ -39,7 +41,7 @@ private:
     std::map<uint256, CVoteSummary> mapVotes;
     std::map<uint256, VoteLocation> mapLocations; //Where each vote is located in the header
     void RemoveStaleSummaries();
-    bool IsLocationOccupied(VoteLocation location);
+    bool IsLocationOccupied(const VoteLocation& location);
 public:
     void SetNull()
     {

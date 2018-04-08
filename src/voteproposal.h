@@ -9,29 +9,33 @@
 #include "main.h"
 #include "serialize.h"
 #include "votetally.h"
+#include "voteobject.h"
 
 #define MAX_CHAR_NAME 10
 #define MAX_CHAR_ABSTRACT 30
 #define MAX_BLOCKS_IN_FUTURE 28800
 #define MAX_CHECKSPAN 28800
 
+//TODO: update
+#define MOST_RECENT_VERSION 1
+
 class CVoteProposal
 {
 private:
+    // proposal version
+    int nVersion;
+
     // what to call the proposal
     std::string strName;
-
-    // what bit position in the block version
-    uint8_t nShift;
 
     // where in the blockchain we start counting votes, nStartHeight
     unsigned int nStartHeight;
 
     // how far in the blockchain are we scanning
-    int nCheckSpan;
+    unsigned int nCheckSpan;
 
-    // number of bits in the block version used for one vote, nBitCount
-    uint8_t nBitCount;
+    // the position of the proposal in the nVersion field
+    VoteLocation bitLocation;
 
     // description of the proposal; may link to additional transactions
     std::string strDescription;
@@ -41,11 +45,10 @@ public:
 
     void SetNull()
     {
+        nVersion = 0;
         strName = "";
-        nShift = 0;
         nStartHeight = 0;
         nCheckSpan = 0;
-        nBitCount = 0;
         strDescription = "";
     }
 
@@ -56,35 +59,35 @@ public:
         SetNull();
     }
 
-    CVoteProposal(std::string strName, uint8_t nShift, unsigned int nStartHeight, int nCheckSpan, uint8_t nBitCount,
-                  std::string strDescription)
+    CVoteProposal(std::string strName, unsigned int nStartHeight, unsigned int nCheckSpan, std::string strDescription,
+                  VoteLocation location, int nVersion = MOST_RECENT_VERSION)
     {
+        this->nVersion = nVersion;
         this->strName = strName;
-        this->nShift = nShift;
         this->nStartHeight = nStartHeight;
         this->nCheckSpan = nCheckSpan;
-        this->nBitCount = nBitCount;
         this->strDescription = strDescription;
+        this->bitLocation = location;
     }
 
     IMPLEMENT_SERIALIZE
     (
+       READWRITE(nVersion);
        READWRITE(strName);
-       READWRITE(nShift);
        READWRITE(nStartHeight);
        READWRITE(nCheckSpan);
-       READWRITE(nBitCount);
        READWRITE(strDescription);
+       READWRITE(bitLocation);
     )
 
     bool ConstructTransaction (CTransaction& tx) const;
-    int GetShift() const { return nShift; }
-    uint8_t GetBitCount() const { return nBitCount; }
-    int GetCheckSpan() const { return nCheckSpan; }
+    int GetShift() const { return bitLocation.GetShift(); }
+    uint8_t GetBitCount() const { return bitLocation.GetBitCount(); }
+    unsigned int GetCheckSpan() const { return nCheckSpan; }
     std::string GetName() const { return strName; }
     std::string GetDescription() const { return strDescription; }
     unsigned int GetStartHeight() const { return nStartHeight; }
-    VoteLocation GetLocation() const;
+    VoteLocation GetLocation() const { return bitLocation; }
     uint256 GetHash() const;
 
 };

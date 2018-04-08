@@ -4186,16 +4186,16 @@ CBlock* CreateNewBlock(CWallet* pwallet, bool fProofOfStake)
 
     //Check to see if proposals need to be voted on
     if (mapProposals.size() > 0) {
-        list<uint32_t> votes;
+        vector<CVoteObject> votes;
 
         // Get all the vote objects versions
         map<uint256, VoteLocation> mapActiveProposals = proposalManager.GetActive(nBestHeight);
         if (pwalletMain->mapVoteObjects.size() > 0) {
-            for (map<uint256, uint256>::iterator it = mapProposals.begin(); it != mapProposals.end(); it++) {
+            for(auto it: mapProposals) {
                 CTransaction tx;
                 uint256 hashBlock;
-                if (!GetTransaction(it->first, tx, hashBlock)) {
-                    printf("*** failed to get transaction %s!\n", it->first.GetHex().c_str());
+                if (!GetTransaction(it.first, tx, hashBlock)) {
+                    printf("*** failed to get transaction %s!\n", it.first.GetHex().c_str());
                     continue;
                 }
 
@@ -4220,17 +4220,14 @@ CBlock* CreateNewBlock(CWallet* pwallet, bool fProofOfStake)
                 }
 
                 CVoteObject voteObject = pwalletMain->mapVoteObjects[proposal.GetHash()];
-                votes.push_back(voteObject.GetFormattedVote());
+                votes.emplace_back(voteObject);
                 //printf("*** added vote for %s\n", proposal.GetName().c_str());
             }
         } else
             printf("*** mapVoteObjects empty!\n");
 
         // Update the block version to have all votes
-        for (uint32_t vote : votes) {
-            pblock->nVersion |= vote;
-
-        }
+        pblock->nVersion |= CVoteObject::GetCombinedVotes(votes);
     } else {
         printf("map proposals empty\n");
     }
