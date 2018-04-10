@@ -1,4 +1,4 @@
-/*
+
 #include <map>
 #include <string>
 #include <boost/test/unit_test.hpp>
@@ -10,6 +10,8 @@
 #include "../voteobject.h"
 #include "../votetally.h"
 #include "../votecharset.h"
+#include "../voteproposalmanager.h"
+#include "../db.h"
 
 using namespace std;
 
@@ -28,12 +30,16 @@ uint8_t nCardinals = 2;
 // description of issue - will go in different tx
 std::string strDescription = "test_description";
 
-CVoteProposal proposal(strName, nShift, nStartTime, nCheckSpan, nCardinals, strDescription);
-
-
 BOOST_AUTO_TEST_CASE(proposal_serialization)
 {
     std::cout << "testing proposal serialization\n";
+
+    CVoteProposalManager manager;
+
+    VoteLocation location;
+    manager.GetNextLocation(nCardinals, nStartTime, nCheckSpan, location);
+    CVoteProposal proposal(strName, nStartTime, nCheckSpan, strDescription, location);
+    manager.Add(proposal);
 
     //! Add the constructed proposal to a partial transaction
     CTransaction tx;
@@ -43,6 +49,25 @@ BOOST_AUTO_TEST_CASE(proposal_serialization)
 
     CVoteProposal proposal2;
     BOOST_CHECK_MESSAGE(ProposalFromTransaction(tx, proposal2), "Failed to deserialize");
+
+    //CHECKS TO DETERMINE IF DESERIALIZATION WORKS AS INTENDED
+    BOOST_CHECK_MESSAGE(proposal2.GetHash() == proposal.GetHash(), "hash of proposal after it is deserialized isn't equal"
+                                                                   "to its original value");
+    BOOST_CHECK_MESSAGE(proposal2.GetLocation().nLeastSignificantBit == proposal.GetLocation().nLeastSignificantBit
+                            && proposal2.GetLocation().nMostSignificantBit == proposal.GetLocation().nMostSignificantBit,
+                            "location of proposal after it is deserialized isn't equal to its original value");
+    BOOST_CHECK_MESSAGE(proposal2.GetBitCount() == proposal.GetBitCount(), "bitcount of proposal after it is deserialized isn't equal"
+                                                                   "to its original value");
+    BOOST_CHECK_MESSAGE(proposal2.GetShift() == proposal.GetShift(), "shift of proposal after it is deserialized isn't equal"
+                                                                   "to its original value");
+    BOOST_CHECK_MESSAGE(proposal2.GetStartHeight() == proposal.GetStartHeight(), "start height of proposal after it is deserialized isn't equal"
+                                                                                 "to its original value");
+    BOOST_CHECK_MESSAGE(proposal2.GetCheckSpan() == proposal.GetCheckSpan(), "check span of proposal after it is deserialized isn't equal"
+                                                                   "to its original value");
+    BOOST_CHECK_MESSAGE(proposal2.GetDescription() == proposal.GetDescription(), "description of proposal after it is deserialized isn't equal"
+                                                                   "to its original value");
+    BOOST_CHECK_MESSAGE(proposal2.GetName() == proposal.GetName(), "name of proposal after it is deserialized isn't equal"
+                                                                   "to its original value");
 
     //! Create a tx that can be used as an input in the actual proposal tx
     CTransaction txFunding;
@@ -78,21 +103,24 @@ BOOST_AUTO_TEST_CASE(proposal_serialization)
 
 }
 
-BOOST_AUTO_TEST_CASE(vote_tally)
-{
-    std::cout << "testing vote tally\n";
+//BOOST_AUTO_TEST_CASE(vote_tally)
+//{
+    /*std::cout << "testing vote tally\n";
 
     map<uint256, VoteLocation> mapNewLocations;
-    VoteLocation location;
-    location.first = static_cast<uint8_t>(proposal.GetShift() - proposal.GetBitCount());
-    location.second = static_cast<uint8_t>(proposal.GetShift());
+    VoteLocation location(proposal.GetShift() + proposal.GetBitCount() - 1, proposal.GetShift());
     mapNewLocations.insert(make_pair(proposal.GetHash(), location));
+
+    CTransaction tx;
+    proposal.ConstructTransaction(tx);
+
+    mapProposals.insert(std::pair<uint256, uint256>(tx.GetHash(), proposal.GetHash()));
 
     CVoteTally tally;
     BOOST_CHECK_MESSAGE(tally.SetNewPositions(mapNewLocations), "Position is already occupied when it should not be");
 
     uint32_t nVote = 0x40080000;
-    // 0000 0000 0000 1000 0000 0000 0000 0000
+    // 0100 0000 0000 1000 0000 0000 0000 0000
     //
     tally.ProcessNewVotes(nVote);
 
@@ -124,29 +152,73 @@ BOOST_AUTO_TEST_CASE(vote_tally)
     CVoteSummary summary4;
     BOOST_CHECK_MESSAGE(tally4.GetSummary(proposal.GetHash(), summary4), "failed to get summary from tally2");
     BOOST_CHECK_MESSAGE(summary4.nYesTally == 2, "summary4 is not 2");
-    BOOST_CHECK_MESSAGE(summary4.nNoTally == 1, "summary4 no votes is not 1");
+    BOOST_CHECK_MESSAGE(summary4.nNoTally == 1, "summary4 no votes is not 1");*/
 
-}
+//}
 
 BOOST_AUTO_TEST_CASE(vote_charset)
 {
-//    std::string someString;
-//    std::vector<unsigned char> vch;
-//    BOOST_CHECK_MESSAGE(ConvertTo6bit("test proposal text", vch), "6 bit character conversion failed");
-//    cout << "converted string: " << ReverseEndianString(HexStr(vch)) << endl;
-//    BOOST_CHECK_MESSAGE(ConvertTo8bit(vch, someString), "failed to deconvert");
-//
-//    cout << "deconverted string: " << someString << endl;
+        std::cout << "testing proposal manager functionality and GetCombinedVotes()" << endl;
+
+        CVoteProposalManager manager;
+
+        VoteLocation location1;
+        manager.GetNextLocation(nCardinals, nStartTime, nCheckSpan, location1);
+        CVoteProposal proposal1(strName, nStartTime, nCheckSpan, strDescription, location1);
+        manager.Add(proposal1);
+
+        VoteLocation location2;
+        manager.GetNextLocation(nCardinals, nStartTime, nCheckSpan, location2);
+        CVoteProposal proposal2(strName, nStartTime, nCheckSpan, strDescription, location2);
+        manager.Add(proposal2);
+
+        VoteLocation location3;
+        manager.GetNextLocation(nCardinals, nStartTime, nCheckSpan, location3);
+        CVoteProposal proposal3(strName, nStartTime, nCheckSpan, strDescription, location3);
+        manager.Add(proposal3);
+
+        VoteLocation location4;
+        manager.GetNextLocation(nCardinals, nStartTime, nCheckSpan, location4);
+        CVoteProposal proposal4(strName, nStartTime, nCheckSpan, strDescription, location4);
+        manager.Add(proposal4);
+
+        VoteLocation location5;
+        manager.GetNextLocation(nCardinals, nStartTime, nCheckSpan, location5);
+        CVoteProposal proposal5(strName, nStartTime, nCheckSpan, strDescription, location5);
+        manager.Add(proposal5);
 
         uint32_t nVersion = 0x50000000;
-        uint32_t nVote = 2;
-        uint256 hash;
-        CVoteObject vote(hash, 2, 28);
-        vote.Vote(nVote);
 
-        nVersion |= (vote.GetFormattedVote() >> 1);
-        cout << "version: " << nVersion << endl;
-}
+        uint32_t nVote1 = 2;
+        CVoteObject vote1(proposal1.GetHash(), proposal1.GetLocation());
+        vote1.Vote(nVote1);
+
+        uint32_t nVote2 = 1;
+        CVoteObject vote2(proposal2.GetHash(), proposal2.GetLocation());
+        vote2.Vote(nVote2);
+
+        uint32_t nVote3 = 2;
+        CVoteObject vote3(proposal3.GetHash(), proposal3.GetLocation());
+        vote3.Vote(nVote3);
+
+        uint32_t nVote4 = 1;
+        CVoteObject vote4(proposal4.GetHash(), proposal4.GetLocation());
+        vote4.Vote(nVote4);
+
+        uint32_t nVote5 = 2;
+        CVoteObject vote5(proposal5.GetHash(), proposal5.GetLocation());
+        vote5.Vote(nVote5);
+
+        std::vector<CVoteObject> votes = {vote1, vote2, vote3, vote4, vote5};
+
+        nVersion |= CVoteObject::GetCombinedVotes(votes);
+
+        // 0101 [10 01] [10 01] [10 00] 0000 0000 0000 0000
+        uint32_t correctResult = 0x59980000;
+
+        std::cout << "Expected result: " << correctResult << endl << "Actual result: " << nVersion << endl;
+
+        BOOST_CHECK_MESSAGE(nVersion == correctResult, "votes were not combined correctly");
+};
 
 BOOST_AUTO_TEST_SUITE_END()
-*/
