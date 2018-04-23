@@ -6,9 +6,28 @@
 
 using namespace std;
 
+static unsigned int CVoteProposal::GetMaxStartHeight()
+{
+    return pindexBest->nHeight + MAX_DISTANCE_TO_START;
+}
+
 uint256 CVoteProposal::GetHash() const
 {
     return SerializeHash(*this);
+}
+
+bool CVoteProposal::IsValid() const
+{
+    if(nStartHeight > CVoteProposal::GetMaxStartHeight()) {
+        return error("%s: The distance from the current block to the start height of the proposal exceeds the"
+                             "maximum", __func__);
+    }
+
+    if(nCheckSpan > MAX_SPAN) {
+        return error("%s: The span of the proposal exceeds the maximum", __func__);
+    }
+
+    return true;
 }
 
 /**

@@ -94,19 +94,54 @@ map<uint256, VoteLocation> CVoteProposalManager::GetActive(int nHeight)
     return mapActive;
 }
 
+namespace
+{
+    //returns the maximum number of proposals overlapping at any point within the given range
+    int GetMaxOverlap(const vector<CProposalMetaData>& vProposals, const unsigned int& nStart, const unsigned int& nEnd)
+    {
+        int nMaxOverlapQuantity;
+        vector<int> vOverlapCounter(nEnd - nStart + 1);
+
+        for(auto proposalData: vProposals) {
+            if(proposalData.nHeightEnd < nStart) continue;
+            if(proposalData.nHeightStart > nEnd) continue;
+
+            vOverlapCounter.at(proposalData.nHeightStart - nStart)++;
+            vOverlapCounter.at(proposalData.nHeightEnd - nStart)++;
+        }
+
+        int nCurValueCounter = 0;
+        for(int count: vOverlapCounter) {
+            nCurValueCounter += count;
+            nMaxOverlapQuantity = max(nMaxOverlapQuantity, nCurValueCounter);
+        }
+
+        return nMaxOverlapQuantity;
+    }
+
+    //returns a vector of proposals that overlap with the given range
+    vector<CProposalMetaData> GetOverlappingProposals(const map<uint256, CProposalMetaData>& mapProposalData,
+                                                      const int& nStart, const int& nEnd)
+    {
+        vector<CProposalMetaData> vConflictingTime;
+        for (auto it : mapProposalData) {
+            CProposalMetaData data = it.second;
+            if ((int)data.nHeightEnd < nStart)
+                continue;
+            if ((int)data.nHeightStart > nEnd)
+                continue;
+            vConflictingTime.emplace_back(data);
+        }
+    }
+}
+
 bool CVoteProposalManager::GetNextLocation(int nBitCount, int nStartHeight, int nCheckSpan, VoteLocation& location)
 {
     //Conflicts for block range
-    vector<CProposalMetaData> vConflictingTime;
-    for (auto it : mapProposalData) {
-        CProposalMetaData data = it.second;
-        int nEndHeight = nStartHeight + nCheckSpan;
-        if ((int)data.nHeightEnd < nStartHeight)
-            continue;
-        if ((int)data.nHeightStart > nEndHeight)
-            continue;
-        vConflictingTime.emplace_back(data);
-    }
+    vector<CProposalMetaData> vConflictingTime = GetOverlappingProposals(mapProposalData, nStartHeight, nStartHeight + nCheckSpan - 1);
+
+    //Maximum number of conflicts for block range
+    int nMaxConflict = GetMaxOverlap(vConflictingTime, nStartHeight, nStartHeight + nCheckSpan - 1);
 
     //Find an open location for the new proposal, return left most bits
     if (vConflictingTime.empty()) {
