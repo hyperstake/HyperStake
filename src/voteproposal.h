@@ -42,6 +42,10 @@ private:
 public:
     // the amount of HYP burnt when a proposal is made
     static const int64 FEE = 5 * COIN;
+    static const unsigned int MAX_SPAN = -1; //TODO: set
+    static const unsigned int MAX_DISTANCE_TO_START = -1; //TODO: set
+
+    static unsigned int GetMaxStartHeight();
 
     void SetNull()
     {
@@ -80,6 +84,7 @@ public:
        READWRITE(bitLocation);
     )
 
+    bool IsValid() const;
     bool ConstructTransaction (CTransaction& tx) const;
     int GetShift() const { return bitLocation.GetShift(); }
     uint8_t GetBitCount() const { return bitLocation.GetBitCount(); }

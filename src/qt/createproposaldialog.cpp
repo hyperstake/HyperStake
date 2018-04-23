@@ -5,6 +5,7 @@
 #include "walletmodel.h"
 #include "voteproposal.h"
 #include "voteobject.h"
+#include "../voteproposal.h"
 #include <QLineEdit>
 #include <QMessageBox>
 
@@ -78,6 +79,13 @@ void CreateProposalDialog::on_button_CreateProposal_clicked()
 
     //Create the actual proposal
     this->proposal = new CVoteProposal(strName.toStdString(), nStartHeight, nCheckSpan, strAbstract.toStdString(), location);
+
+    if(!this->proposal->IsValid()) {
+        QMessageBox msg;
+        msg.setText(tr("Proposal is invalid. Check to see if the span is greater than" +std::to_string(CVoteProposal::MAX_SPAN) +
+                       " or if the start height is greater than " + std::to_string(CVoteProposal::GetMaxStartHeight())));
+        return;
+    }
 
     //Set proposal hash in dialog
     uint256 hashProposal = proposal->GetHash();
