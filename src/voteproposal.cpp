@@ -6,11 +6,6 @@
 
 using namespace std;
 
-static unsigned int CVoteProposal::GetMaxStartHeight()
-{
-    return pindexBest->nHeight + MAX_DISTANCE_TO_START;
-}
-
 uint256 CVoteProposal::GetHash() const
 {
     return SerializeHash(*this);
@@ -18,13 +13,20 @@ uint256 CVoteProposal::GetHash() const
 
 bool CVoteProposal::IsValid() const
 {
-    if(nStartHeight > CVoteProposal::GetMaxStartHeight()) {
-        return error("%s: The distance from the current block to the start height of the proposal exceeds the"
-                             "maximum", __func__);
+    if (strName.empty() || strName.size() > MAX_CHAR_NAME) {
+        return error("Name needs to be between 1 and %d characters long", MAX_CHAR_NAME);
     }
 
-    if(nCheckSpan > MAX_SPAN) {
-        return error("%s: The span of the proposal exceeds the maximum", __func__);
+    if (strDescription.empty() || strDescription.size() > MAX_CHAR_ABSTRACT) {
+        return error("Abstract needs to be between 1 and %d characters long", MAX_CHAR_ABSTRACT);
+    }
+
+    if (nStartHeight <= nBestHeight || nStartHeight > nBestHeight + MAX_BLOCKS_IN_FUTURE) {
+        return error("Start height needs to be greater than current height (%d) and less than %d.", nBestHeight, (nStartHeight + MAX_BLOCKS_IN_FUTURE));
+    }
+
+    if (!nCheckSpan || nCheckSpan > MAX_CHECKSPAN) {
+        return error("Voting length needs to be between 1 and %d blocks", MAX_CHECKSPAN);
     }
 
     return true;

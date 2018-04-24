@@ -96,27 +96,86 @@ map<uint256, VoteLocation> CVoteProposalManager::GetActive(int nHeight)
 
 namespace
 {
-    //returns the maximum number of proposals overlapping at any point within the given range
-    int GetMaxOverlap(const vector<CProposalMetaData>& vProposals, const unsigned int& nStart, const unsigned int& nEnd)
+    //An Event is either the beginning or end of a vote proposal span.
+    //This struct is used for GetMaxOverlap
+    struct Event
     {
-        int nMaxOverlapQuantity;
-        vector<int> vOverlapCounter(nEnd - nStart + 1);
+        bool start;
+        int position;
+        int bitCount;
+
+        //default constructor
+        Event() {}
+
+        Event(bool start, int position, int bitCount = 0)
+        {
+            this->start = start;
+            this->position = position;
+            this->bitCount = bitCount;
+        }
+
+        static bool Compare(const Event& lhs, const Event& rhs)
+        {
+            return lhs.position < rhs.position;
+        }
+    };
+
+    //returns the maximum number of proposals overlapping at any point within the given range
+    /*unsigned int GetMaxOverlap(const vector<CProposalMetaData>& vProposals, const unsigned int& nStart, const unsigned int& nEnd)
+    {
+        int nMaxOverlapQuantity = -1;
+        vector<Event> vEvents(2 * vProposals.size());
 
         for(auto proposalData: vProposals) {
             if(proposalData.nHeightEnd < nStart) continue;
             if(proposalData.nHeightStart > nEnd) continue;
 
-            vOverlapCounter.at(proposalData.nHeightStart - nStart)++;
-            vOverlapCounter.at(proposalData.nHeightEnd - nStart)++;
+            vEvents.emplace_back(Event(true, proposalData.nHeightStart));
+            vEvents.emplace_back(Event(false, proposalData.nHeightEnd));
         }
 
+        sort(vEvents.begin(), vEvents.end(), Event::Compare);
+
         int nCurValueCounter = 0;
-        for(int count: vOverlapCounter) {
-            nCurValueCounter += count;
+        for(Event event: vEvents) {
+            nCurValueCounter += event.start ? 1 : -1;
             nMaxOverlapQuantity = max(nMaxOverlapQuantity, nCurValueCounter);
         }
 
-        return nMaxOverlapQuantity;
+        return (unsigned int)nMaxOverlapQuantity;
+    }*/
+
+    long GetResourceUsageHeuristic(const vector<CProposalMetaData>& vProposals, const CVoteProposal& proposal)
+    {
+        long nHeuristic = 0;
+        unsigned int nStart = proposal.GetStartHeight();
+        unsigned int nEnd = proposal.GetStartHeight() + proposal.GetCheckSpan() - 1;
+        vector<Event> vEvents(2 * vProposals.size());
+
+        for(auto proposalData: vProposals) {
+            if(proposalData.nHeightEnd < nStart) continue;
+            if(proposalData.nHeightStart > nEnd) continue;
+
+            Event startEvent(true, proposalData.nHeightStart, proposalData.location.GetBitCount());
+            Event endEvent(false, proposalData.nHeightEnd, proposalData.location.GetBitCount());
+
+            vEvents.emplace_back(startEvent);
+            vEvents.emplace_back(endEvent);
+        }
+
+        sort(vEvents.begin(), vEvents.end(), Event::Compare);
+
+        int nCurValueCounter = 0;
+        for(unsigned int i = 0; i < vEvents.size() - 1; i++) {
+            Event curEvent = vEvents.at(i);
+            Event nextEvent = vEvents.at(i + 1);
+            int gap = nextEvent.position - curEvent.position;
+
+            nCurValueCounter += curEvent.start ? curEvent.bitCount : -1 * curEvent.bitCount;
+            nHeuristic += (100000 * ((long) proposal.GetBitCount())) / (MAX_BITCOUNT - nCurValueCounter) * gap;
+        }
+
+        return nHeuristic;
     }
 
     //returns a vector of proposals that overlap with the given range
@@ -135,13 +194,37 @@ namespace
     }
 }
 
+//TODO: test fee output for different inputs. Might change this to grow exponentially
+bool CVoteProposalManager::GetFee(const CVoteProposal& proposal, unsigned int& nFee)
+{
+    if(!proposal.IsValid()){
+        return error("Proposal is not valid");
+    }
+
+    //set the boundaries of the voting interval
+    unsigned int nStartHeight = proposal.GetStartHeight();
+    unsigned int nEndHeight = nStartHeight + proposal.GetCheckSpan() - 1;
+
+    //get conflicting proposals
+    vector<CProposalMetaData> vConflictingTime = GetOverlappingProposals(mapProposalData, nStartHeight, nEndHeight);
+
+    //determine the maximum number of overlapping proposals at any point in the voting interval
+    long nHeuristic = GetResourceUsageHeuristic(vConflictingTime, proposal) / 100000;
+
+    //TODO: this will need to be tested
+    nFee = (unsigned int)(nHeuristic * CVoteProposal::BASE_FEE);
+
+    if(nFee < 0) {
+        return error("Fee should not be negative");
+    }
+
+    return true;
+}
+
 bool CVoteProposalManager::GetNextLocation(int nBitCount, int nStartHeight, int nCheckSpan, VoteLocation& location)
 {
     //Conflicts for block range
     vector<CProposalMetaData> vConflictingTime = GetOverlappingProposals(mapProposalData, nStartHeight, nStartHeight + nCheckSpan - 1);
-
-    //Maximum number of conflicts for block range
-    int nMaxConflict = GetMaxOverlap(vConflictingTime, nStartHeight, nStartHeight + nCheckSpan - 1);
 
     //Find an open location for the new proposal, return left most bits
     if (vConflictingTime.empty()) {

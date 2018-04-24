@@ -29,14 +29,11 @@ class CVoteProposalManager
 private:
     std::map<uint256, CProposalMetaData> mapProposalData;
 public:
-    static const int MAX_SPAN = -1; //TODO: set
-    static const int MAX_DISTANCE_TO_START = -1; //TODO: set
-
-    static bool isProposalValid()
 
     bool Add(const CVoteProposal& proposal);
     void Remove(const uint256& hashProposal);
     std::map<uint256, VoteLocation> GetActive(int nHeight);
+    bool GetFee(const CVoteProposal& proposal, unsigned int& nFee);
     bool GetNextLocation(int nBitCount, int nStartHeight, int nCheckSpan, VoteLocation& location);
     std::map<uint256, CProposalMetaData> GetAllProposals() const { return mapProposalData; };
     bool CheckProposal (const CVoteProposal& proposal);

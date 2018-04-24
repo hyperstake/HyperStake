@@ -5,7 +5,6 @@
 #include "walletmodel.h"
 #include "voteproposal.h"
 #include "voteobject.h"
-#include "../voteproposal.h"
 #include <QLineEdit>
 #include <QMessageBox>
 
@@ -80,13 +79,6 @@ void CreateProposalDialog::on_button_CreateProposal_clicked()
     //Create the actual proposal
     this->proposal = new CVoteProposal(strName.toStdString(), nStartHeight, nCheckSpan, strAbstract.toStdString(), location);
 
-    if(!this->proposal->IsValid()) {
-        QMessageBox msg;
-        msg.setText(tr("Proposal is invalid. Check to see if the span is greater than" +std::to_string(CVoteProposal::MAX_SPAN) +
-                       " or if the start height is greater than " + std::to_string(CVoteProposal::GetMaxStartHeight())));
-        return;
-    }
-
     //Set proposal hash in dialog
     uint256 hashProposal = proposal->GetHash();
     QString strHash = QString::fromStdString(hashProposal.GetHex());
@@ -120,7 +112,7 @@ void CreateProposalDialog::Clear()
     ui->lineEdit_Length->clear();
     ui->lineEdit_Name->clear();
     ui->lineEdit_StartBlock->clear();
-    ui->label_Fee_result->setText(QString::fromStdString(FormatMoney(CVoteProposal::FEE)));
+    ui->label_Fee_result->setText(QString::fromStdString(FormatMoney(CVoteProposal::BASE_FEE)));
     ui->label_Hash_result->setText("(Automatically Generated)");
     ui->label_Location_result->setText("(Automatically Generated)");
     ui->label_Location_result->setText("(Automatically Generated)");
