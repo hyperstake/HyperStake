@@ -1927,7 +1927,18 @@ bool CWallet::FinalizeProposal(CTransaction& txProposal)
     //! Choose coins to use
     set<pair<const CWalletTx*,unsigned int> > setCoins;
     int64 nValueIn = 0;
-    if (!SelectCoins(5 * COIN, GetTime(), setCoins, nValueIn, NULL) || nValueIn < CVoteProposal::FEE)
+
+    CVoteProposal proposal;
+    if(!ProposalFromTransaction(txProposal, proposal)) {
+        return error("Proposal was not successfully extracted from transaction. This shouldn't happen.");
+    }
+
+    unsigned int nFee;
+    if(!proposalManager.GetFee(proposal, nFee)) {
+        return error("Fee for proposal was not able to be calculated. This may mean the proposal is not valid.");
+    }
+
+    if (!SelectCoins(5 * COIN, GetTime(), setCoins, nValueIn, NULL) || nValueIn < nFee)
         return error("Failed to select coins to spend");
 
     //! Select one of the addresses to send the change to, and add inputs to the proposal tx
@@ -1940,8 +1951,8 @@ bool CWallet::FinalizeProposal(CTransaction& txProposal)
     }
 
     //! Add change output
-    if (nValueIn > CVoteProposal::FEE + CENT) {
-        CTxOut out(nValueIn - CVoteProposal::FEE, scriptChange);
+    if (nValueIn > nFee + CENT) {
+        CTxOut out(nValueIn - nFee, scriptChange);
         txProposal.vout.push_back(out);
     }
 
@@ -2555,7 +2566,11 @@ bool CWallet::SendProposal(const CVoteProposal& proposal, uint256& txid)
 
     printf("*** after available coins\n");
 
-    int64 nFee = CVoteProposal::FEE;
+    unsigned int nFee;
+    if(!proposalManager.GetFee(proposal, nFee)) {
+        return error("Fee for proposal was not able to be calculated. This may mean the proposal is not valid.");
+    }
+
     int64 nValueIn = 0;
 
     set<pair<const CWalletTx*,unsigned int> > setCoins;

@@ -15,6 +15,7 @@
 #define MAX_CHAR_ABSTRACT 30
 #define MAX_BLOCKS_IN_FUTURE 28800
 #define MAX_CHECKSPAN 28800
+#define MAX_BITCOUNT 28
 
 //TODO: update
 #define MOST_RECENT_VERSION 1
@@ -41,11 +42,7 @@ private:
     std::string strDescription;
 public:
     // the amount of HYP burnt when a proposal is made
-    static const int64 FEE = 5 * COIN;
-    static const unsigned int MAX_SPAN = -1; //TODO: set
-    static const unsigned int MAX_DISTANCE_TO_START = -1; //TODO: set
-
-    static unsigned int GetMaxStartHeight();
+    static const int64 BASE_FEE = 5 * COIN;
 
     void SetNull()
     {
