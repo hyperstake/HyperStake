@@ -112,7 +112,7 @@ void CreateProposalDialog::Clear()
     ui->lineEdit_Length->clear();
     ui->lineEdit_Name->clear();
     ui->lineEdit_StartBlock->clear();
-    ui->label_Fee_result->setText(QString::fromStdString(FormatMoney(CVoteProposal::BASE_FEE)));
+    ui->label_Fee_result->setText(QString::fromStdString(FormatMoney(CVoteProposal::BASE_FEE))); // TODO: fee is dynamic
     ui->label_Hash_result->setText("(Automatically Generated)");
     ui->label_Location_result->setText("(Automatically Generated)");
     ui->label_Location_result->setText("(Automatically Generated)");
