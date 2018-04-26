@@ -112,8 +112,9 @@ namespace
     long GetResourceUsageHeuristic(const vector<CProposalMetaData>& vProposals, const CVoteProposal& proposal)
     {
         long nHeuristic = 0;
-        unsigned int nStart = proposal.GetStartHeight();
-        unsigned int nEnd = proposal.GetStartHeight() + proposal.GetCheckSpan() - 1;
+        int nStart = proposal.GetStartHeight();
+        int nEnd = proposal.GetStartHeight() + proposal.GetCheckSpan();
+
         vector<Event> vEvents(2 * vProposals.size());
 
         for(auto proposalData: vProposals) {
@@ -121,7 +122,7 @@ namespace
             if(proposalData.nHeightStart > nEnd) continue;
 
             Event startEvent(true, proposalData.nHeightStart, proposalData.location.GetBitCount());
-            Event endEvent(false, proposalData.nHeightEnd, proposalData.location.GetBitCount());
+            Event endEvent(false, proposalData.nHeightEnd + 1, proposalData.location.GetBitCount());
 
             vEvents.emplace_back(startEvent);
             vEvents.emplace_back(endEvent);
@@ -133,9 +134,13 @@ namespace
         for(unsigned int i = 0; i < vEvents.size() - 1; i++) {
             Event curEvent = vEvents.at(i);
             Event nextEvent = vEvents.at(i + 1);
-            int gap = nextEvent.position - curEvent.position;
 
             nCurValueCounter += curEvent.start ? curEvent.bitCount : -1 * curEvent.bitCount;
+
+            if(nextEvent.position <= nStart) continue;
+            if(curEvent.position > nEnd) break;
+
+            int gap = min(nEnd, nextEvent.position) - max(nStart, curEvent.position);
             nHeuristic += (100000 * ((long) proposal.GetBitCount())) / (MAX_BITCOUNT - nCurValueCounter) * gap;
         }
 
