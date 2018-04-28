@@ -5,6 +5,7 @@
 #include "walletmodel.h"
 #include "voteproposal.h"
 #include "voteobject.h"
+#include "../voteproposal.h"
 #include <QLineEdit>
 #include <QMessageBox>
 
@@ -61,6 +62,14 @@ void CreateProposalDialog::on_button_CreateProposal_clicked()
         return;
     }
 
+    int nMaxFee = ui->lineEdit_Max_Fee->text().toInt();
+    if (nMaxFee < CVoteProposal::BASE_FEE) {
+        QMessageBox msg;
+        msg.setText(tr("Max Fee must be greater than or equal to %1").arg(CVoteProposal::BASE_FEE));
+        msg.exec();
+        return;
+    }
+
     //Right now only supporting 2 bit votes
     int nBitCount = 2;
     QString strSize = QString::number(nBitCount);
@@ -74,9 +83,8 @@ void CreateProposalDialog::on_button_CreateProposal_clicked()
         return;
     }
 
-    //TODO: max fee
     //Create the actual proposal
-    this->proposal = new CVoteProposal(strName.toStdString(), nStartHeight, nCheckSpan, strAbstract.toStdString(), 0);
+    this->proposal = new CVoteProposal(strName.toStdString(), nStartHeight, nCheckSpan, strAbstract.toStdString(), nMaxFee);
 
     //Set proposal hash in dialog
     uint256 hashProposal = proposal->GetHash();

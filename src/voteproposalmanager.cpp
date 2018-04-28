@@ -200,7 +200,7 @@ namespace
 }
 
 //TODO: test fee output for different inputs. Might change this to grow exponentially
-bool CVoteProposalManager::GetFee(const CVoteProposal& proposal, unsigned int& nFee)
+bool CVoteProposalManager::GetFee(const CVoteProposal& proposal, int& nFee)
 {
     if(!proposal.IsValid()){
         return error("Proposal is not valid");
@@ -221,6 +221,30 @@ bool CVoteProposalManager::GetFee(const CVoteProposal& proposal, unsigned int& n
 
     if(nFee < 0) {
         return error("Fee should not be negative");
+    }
+
+    return true;
+}
+
+bool CVoteProposalManager::GetDeterministicOrdering(const uint256 &proofhash, std::vector<CTransaction> &vProposalTransactions,
+                                                    std::vector<CTransaction> &vOrderedProposalTransactions)
+{
+    int nMask = 0x000FFFFF;
+    int nSegmentSize = 20;
+    int nSegmentOffset = 0;
+    while(!vProposalTransactions.empty()) {
+        uint256 nFormattedMask = nMask << (nSegmentOffset * nSegmentSize);
+        int segment = (int)((proofhash & nFormattedMask) >> (nSegmentOffset * nSegmentOffset)).Get64();
+        int index = (int)(segment % vProposalTransactions.size());
+
+        if(segment < 0 || index < 0) {
+            return error("Generated index is invalid");
+        }
+
+        vOrderedProposalTransactions.emplace_back(vProposalTransactions.at(index));
+        vProposalTransactions.erase(vProposalTransactions.begin() + index);
+
+        nSegmentOffset = (nSegmentOffset + nSegmentSize) % 256;
     }
 
     return true;

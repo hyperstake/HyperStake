@@ -9,6 +9,7 @@
 #include "voteobject.h"
 
 class CVoteProposal;
+class CTransaction;
 
 //1. calculate fee for proposal
 //2. fee is a function of bits used and range with a restriction on start time
@@ -33,7 +34,9 @@ public:
     bool Add(const CVoteProposal& proposal);
     void Remove(const uint256& hashProposal);
     std::map<uint256, VoteLocation> GetActive(int nHeight);
-    bool GetFee(const CVoteProposal& proposal, unsigned int& nFee);
+    bool GetFee(const CVoteProposal& proposal, int& nFee);
+    bool GetDeterministicOrdering(const uint256& proofhash, std::vector<CTransaction>& vProposalTransactions,
+                                    std::vector<CTransaction>& vOrderedProposalTransactions);
     bool GetNextLocation(int nBitCount, int nStartHeight, int nCheckSpan, VoteLocation& location);
     std::map<uint256, CProposalMetaData> GetAllProposals() const { return mapProposalData; };
     bool CheckProposal (const CVoteProposal& proposal);
