@@ -61,6 +61,19 @@ public:
     }
 
     CVoteProposal(std::string strName, unsigned int nStartHeight, unsigned int nCheckSpan, std::string strDescription,
+                  int nMaxFee, int nVersion = MOST_RECENT_VERSION)
+    {
+        this->nVersion = nVersion;
+        this->strName = strName;
+        this->nStartHeight = nStartHeight;
+        this->nCheckSpan = nCheckSpan;
+        this->strDescription = strDescription;
+
+        //VoteLocation will be set when the proposal is accepted by the network and the dynamic fee is determined
+    }
+
+    //DEPRECATED: USED FOR TESTING
+    CVoteProposal(std::string strName, unsigned int nStartHeight, unsigned int nCheckSpan, std::string strDescription,
                   VoteLocation location, int nVersion = MOST_RECENT_VERSION)
     {
         this->nVersion = nVersion;
@@ -92,6 +105,7 @@ public:
     VoteLocation GetLocation() const { return bitLocation; }
     uint256 GetHash() const;
 
+    void SetLocation(VoteLocation location) { this->bitLocation = location; }
 };
 
 bool ProposalFromTransaction(const CTransaction& tx, CVoteProposal& proposal);
