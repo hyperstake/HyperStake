@@ -1933,10 +1933,7 @@ bool CWallet::FinalizeProposal(CTransaction& txProposal)
         return error("Proposal was not successfully extracted from transaction. This shouldn't happen.");
     }
 
-    unsigned int nFee;
-    if(!proposalManager.GetFee(proposal, nFee)) {
-        return error("Fee for proposal was not able to be calculated. This may mean the proposal is not valid.");
-    }
+    int nFee = CVoteProposal::BASE_FEE;
 
     if (!SelectCoins(5 * COIN, GetTime(), setCoins, nValueIn, NULL) || nValueIn < nFee)
         return error("Failed to select coins to spend");
