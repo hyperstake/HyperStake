@@ -66,18 +66,9 @@ void CreateProposalDialog::on_button_CreateProposal_clicked()
     QString strSize = QString::number(nBitCount);
     ui->label_Size_result->setText(strSize);
 
-    //Set bit location in dialog
-    VoteLocation location;
-    if (!proposalManager.GetNextLocation(nBitCount, nStartHeight, nCheckSpan, location)) {
-        QMessageBox msg;
-        msg.setText(tr("Failed to get next location from the proposal manager"));
-        msg.exec();
-        return;
-    }
-    ui->label_Location_result->setText(QString::number(location.nLeastSignificantBit));
-
+    //TODO: max fee
     //Create the actual proposal
-    this->proposal = new CVoteProposal(strName.toStdString(), nStartHeight, nCheckSpan, strAbstract.toStdString(), location);
+    this->proposal = new CVoteProposal(strName.toStdString(), nStartHeight, nCheckSpan, strAbstract.toStdString(), 0);
 
     //Set proposal hash in dialog
     uint256 hashProposal = proposal->GetHash();
