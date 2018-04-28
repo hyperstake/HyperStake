@@ -1648,10 +1648,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
                     return error("Proposal was not successfully extracted from transaction. This shouldn't happen.");
                 }
 
-                unsigned int nFee;
-                if(!proposalManager.GetFee(proposal, nFee)) {
-                    return error("Fee for proposal was not able to be calculated. This may mean the proposal is not valid.");
-                }
+                int nFee = CVoteProposal::BASE_FEE;
 
                 //Needs to have the proper fee or else it will not be counted
                 if (nTxValueIn - nTxValueOut >= nFee - MIN_TXOUT_AMOUNT)
