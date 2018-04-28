@@ -66,6 +66,14 @@ void CreateProposalDialog::on_button_CreateProposal_clicked()
     QString strSize = QString::number(nBitCount);
     ui->label_Size_result->setText(strSize);
 
+    VoteLocation location;
+    if(!proposalManager.GetNextLocation(nBitCount, nStartHeight, nCheckSpan, location)) {
+        QMessageBox msg;
+        msg.setText(tr("The specified voting span is already full. Try a different start and span.").arg(MAX_CHECKSPAN));
+        msg.exec();
+        return;
+    }
+
     //TODO: max fee
     //Create the actual proposal
     this->proposal = new CVoteProposal(strName.toStdString(), nStartHeight, nCheckSpan, strAbstract.toStdString(), 0);
