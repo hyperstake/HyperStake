@@ -4492,6 +4492,38 @@ CBlock* CreateNewBlock(CWallet* pwallet, bool fProofOfStake)
             }
         }
 
+        vector<CTransaction> vProposalTransactions;
+        for(CTransaction tx: pblock->vtx) {
+            if(tx.IsProposal()) {
+                vProposalTransactions.emplace_back(tx);
+            }
+        }
+
+        vector<CTransaction> vOrderedProposalTransactions;
+        proposalManager.GetDeterministicOrdering(pindexPrev->hashProofOfStake, vProposalTransactions, vOrderedProposalTransactions);
+        for(CTransaction txProposal: vOrderedProposalTransactions) {
+            int nRequiredFee = 0;
+            int nTxFee = (int)MIN_TX_FEE; //TODO: update this to be higher
+            CVoteProposal proposal;
+
+            if(!ProposalFromTransaction(txProposal, proposal)) {
+                //TODO: proposal was not able to be extracted from transaction
+                continue;
+            }
+
+            if(!proposalManager.GetFee(proposal, nRequiredFee)) {
+                //TODO: fee was not able to be calculated for this proposal
+                continue;
+            }
+
+            if(nRequiredFee > proposal.GetMaxFee()) {
+                //TODO: the max fee provided by the creator of the proposal is not high enough. Add refund = nMaxFee - txFee
+                continue;
+            }
+
+            //TODO: accept proposal and add refund = nMaxFee - nRequiredFee - txFee
+        }
+
         nLastBlockTx = nBlockTx;
         nLastBlockSize = nBlockSize;
 

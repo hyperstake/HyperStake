@@ -26,6 +26,9 @@ private:
     // proposal version
     int nVersion;
 
+    // proposal max fee provided by creator of proposal
+    int nMaxFee;
+
     // what to call the proposal
     std::string strName;
 
@@ -47,6 +50,7 @@ public:
     void SetNull()
     {
         nVersion = 0;
+        nMaxFee = 0;
         strName = "";
         nStartHeight = 0;
         nCheckSpan = 0;
@@ -68,6 +72,7 @@ public:
         this->nStartHeight = nStartHeight;
         this->nCheckSpan = nCheckSpan;
         this->strDescription = strDescription;
+        this->nMaxFee = nMaxFee;
 
         //VoteLocation will be set when the proposal is accepted by the network and the dynamic fee is determined
     }
@@ -87,6 +92,7 @@ public:
     IMPLEMENT_SERIALIZE
     (
        READWRITE(nVersion);
+       READWRITE(nMaxFee);
        READWRITE(strName);
        READWRITE(nStartHeight);
        READWRITE(nCheckSpan);
@@ -103,6 +109,7 @@ public:
     std::string GetDescription() const { return strDescription; }
     unsigned int GetStartHeight() const { return nStartHeight; }
     VoteLocation GetLocation() const { return bitLocation; }
+    int GetMaxFee() const { return nMaxFee; }
     uint256 GetHash() const;
 
     void SetLocation(VoteLocation location) { this->bitLocation = location; }

@@ -2566,10 +2566,7 @@ bool CWallet::SendProposal(const CVoteProposal& proposal, uint256& txid)
 
     printf("*** after available coins\n");
 
-    unsigned int nFee;
-    if(!proposalManager.GetFee(proposal, nFee)) {
-        return error("Fee for proposal was not able to be calculated. This may mean the proposal is not valid.");
-    }
+    int nFee = proposal.GetMaxFee();
 
     int64 nValueIn = 0;
 
