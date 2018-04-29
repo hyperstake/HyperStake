@@ -4,6 +4,7 @@
 
 #include "voteproposalmanager.h"
 #include "voteproposal.h"
+#include "base58.h"
 
 using namespace std;
 
@@ -210,6 +211,24 @@ bool CVoteProposalManager::GetDeterministicOrdering(const uint256 &proofhash, st
 
         nSegmentOffset = (nSegmentOffset + nSegmentSize) % 256;
     }
+
+    return true;
+}
+
+bool CVoteProposalManager::GetRefundTransaction(const CVoteProposal &proposal, const int& nRequiredFee, const int& nTxFee,
+                                                const bool bProposalAccepted, CTransaction &txRefund)
+{
+    CBitcoinAddress refundAddress;
+    if(!refundAddress.SetString(proposal.GetRefundAddress())) {
+        return error("Refund Address of proposal is not valid");
+    }
+
+    txRefund.vin.resize(1);
+    txRefund.vin[0].prevout.SetNull();
+
+    txRefund.vout.resize(1);
+    txRefund.vout[0].scriptPubKey.SetDestination(refundAddress.Get());
+    txRefund.vout[0].nValue = bProposalAccepted ? proposal.GetMaxFee() - nRequiredFee - nTxFee : proposal.GetMaxFee() - nTxFee;
 
     return true;
 }
