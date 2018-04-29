@@ -66,33 +66,43 @@
      <item row="4" column="1">
       <widget class="QLineEdit" name="lineEdit_Max_Fee"/>
      </item>
-     <item row="7" column="0">
+     <item row="8" column="0">
       <widget class="QLabel" name="label_Hash">
        <property name="text">
         <string>Proposal Hash:</string>
        </property>
       </widget>
      </item>
-     <item row="7" column="1">
+     <item row="8" column="1">
       <widget class="QLabel" name="label_Hash_result">
        <property name="text">
         <string>(Automatically Generated)</string>
        </property>
       </widget>
      </item>
-     <item row="8" column="0">
+     <item row="9" column="0">
       <widget class="QLabel" name="label_Size">
        <property name="text">
         <string>Bit Size:</string>
        </property>
       </widget>
      </item>
-     <item row="8" column="1">
+     <item row="9" column="1">
       <widget class="QLabel" name="label_Size_result">
        <property name="text">
         <string>(Automatically Generated)</string>
        </property>
       </widget>
+     </item>
+     <item row="5" column="0">
+      <widget class="QLabel" name="label_Refund_Address">
+       <property name="text">
+        <string>Refund Address:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="1">
+      <widget class="QLineEdit" name="lineEdit_Refund_Address"/>
      </item>
     </layout>
    </item>

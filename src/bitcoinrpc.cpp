@@ -1240,7 +1240,7 @@ Array RPCConvertValues(const std::string &strMethod, const std::vector<std::stri
     if (strMethod == "createproposal"         && n > 1) ConvertTo<int>(params[1]);
     if (strMethod == "createproposal"         && n > 2) ConvertTo<int>(params[2]);
     if (strMethod == "createproposal"         && n > 3) ConvertTo<int>(params[3]);
-    if (strMethod == "createproposal"         && n > 4) ConvertTo<int>(params[4]);
+    if (strMethod == "createproposal"         && n > 5) ConvertTo<int>(params[5]);
     if (strMethod == "setvote"                && n > 1) ConvertTo<int>(params[1]);
     return params;
 }

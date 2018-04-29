@@ -5,7 +5,7 @@
 #include "walletmodel.h"
 #include "voteproposal.h"
 #include "voteobject.h"
-#include "../voteproposal.h"
+#include "base58.h"
 #include <QLineEdit>
 #include <QMessageBox>
 
@@ -70,6 +70,15 @@ void CreateProposalDialog::on_button_CreateProposal_clicked()
         return;
     }
 
+    std::string strRefundAddress = ui->lineEdit_Refund_Address->text().toStdString();
+    CBitcoinAddress address;
+    if (strRefundAddress.empty() || !address.SetString(strRefundAddress)) {
+        QMessageBox msg;
+        msg.setText(tr("The provided refund address is invalid"));
+        msg.exec();
+        return;
+    }
+
     //Right now only supporting 2 bit votes
     int nBitCount = 2;
     QString strSize = QString::number(nBitCount);
@@ -78,14 +87,13 @@ void CreateProposalDialog::on_button_CreateProposal_clicked()
     VoteLocation location;
     if(!proposalManager.GetNextLocation(nBitCount, nStartHeight, nCheckSpan, location)) {
         QMessageBox msg;
-        msg.setText(tr("The specified voting span is already full. Try a different start and span.").arg(MAX_CHECKSPAN));
+        msg.setText(tr("The specified voting span is already full. Try a different start and span."));
         msg.exec();
         return;
     }
 
-    //TODO: refund address
     //Create the actual proposal
-    this->proposal = new CVoteProposal(strName.toStdString(), nStartHeight, nCheckSpan, strAbstract.toStdString(), nMaxFee, "");
+    this->proposal = new CVoteProposal(strName.toStdString(), nStartHeight, nCheckSpan, strAbstract.toStdString(), nMaxFee, strRefundAddress);
 
     //Set proposal hash in dialog
     uint256 hashProposal = proposal->GetHash();
