@@ -309,22 +309,32 @@ Value createproposal(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() != 6)
         throw runtime_error(
-                "createproposal \n<strName>\n<nStartBlock>\n<nCheckSpan>\n<nBits>\n<strDescription>\n"
+                "createproposal \n<strName>\n<nStartBlock>\n<nCheckSpan>\n<nBits>\n<strDescription>\n<nMaxFee>\n<strRefundAddress\n"
                 "Returns new VoteProposal object with specified parameters\n");
+
     // name of issue
     string strName = params[0].get_str();
+
     // start time - will be changed to int StartHeight. unix time stamp
     int64 nStartTime =  params[1].get_int();
+
     // number of blocks with votes to count
     int nCheckSpan = params[2].get_int();
+
     // cardinal items to vote on - convert to uint8 CheckSpan
     uint8_t nBits = params[3].get_int();
+
     // description of issue - will go in different tx
     std::string strDescription = params[4].get_str();
 
+    // the maximum fee the proposal creator is willing to pay
+    int nMaxFee = params[5].get_int();
+
+    // the address that the left over fee should be sent to
+    std::string strRefundAddress = params[6].get_str();
+
     Object results;
-    //TODO: max fee & refund address
-    CVoteProposal proposal(strName, nStartTime, nCheckSpan, strDescription, 0, "");
+    CVoteProposal proposal(strName, nStartTime, nCheckSpan, strDescription, nMaxFee, strRefundAddress);
 
     //! Add the constructed proposal to a partial transaction
     CTransaction tx;
