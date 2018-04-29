@@ -4496,30 +4496,50 @@ CBlock* CreateNewBlock(CWallet* pwallet, bool fProofOfStake)
             }
         }
 
+        // TODO: MIGHT NEED TO CHECK BLOCK SIZE CONSTRAINTS
         vector<CTransaction> vOrderedProposalTransactions;
         proposalManager.GetDeterministicOrdering(pindexPrev->hashProofOfStake, vProposalTransactions, vOrderedProposalTransactions);
         for(CTransaction txProposal: vOrderedProposalTransactions) {
-            int nRequiredFee = 0;
-            int nTxFee = (int)MIN_TX_FEE; //TODO: update this to be higher
+            // output variables
+            int nRequiredFee;
             CVoteProposal proposal;
+            VoteLocation location;
+            CTransaction txRefund;
 
+            // input variables
+            int nTxFee = (int)MIN_TX_FEE; //TODO: MAKE THIS HIGHER
+            int nBitCount = proposal.GetBitCount();
+            int nStartHeight = proposal.GetStartHeight();
+            int nCheckSpan = proposal.GetCheckSpan();
+
+            // Skip this txProposal if a proposal object cannot be extracted from it
             if(!ProposalFromTransaction(txProposal, proposal)) {
-                //TODO: proposal was not able to be extracted from transaction
                 continue;
             }
 
-            if(!proposalManager.GetFee(proposal, nRequiredFee)) {
-                //TODO: fee was not able to be calculated for this proposal
-                continue;
+            // If a valid voting location cannot be found the create an unaccepted proposal refund
+            if(!proposalManager.GetNextLocation(nBitCount, nStartHeight, nCheckSpan, location)) {
+                proposalManager.GetRefundTransaction(proposal, nRequiredFee, nTxFee, false, txRefund);
+            } else {
+
+                // If a fee cannot be calculated the skip this proposal without creating a refund tx
+                proposal.SetLocation(location);
+                if (!proposalManager.GetFee(proposal, nRequiredFee)) continue;
+
+                // If the maximum fee provided by the proposal creator is less than the required fee
+                // then create an unaccepted proposal refund
+                if (nRequiredFee > proposal.GetMaxFee()) {
+                    proposalManager.GetRefundTransaction(proposal, nRequiredFee, nTxFee, false, txRefund);
+                } else {
+                    proposalManager.GetRefundTransaction(proposal, nRequiredFee, nTxFee, true, txRefund);
+                }
             }
 
-            if(nRequiredFee > proposal.GetMaxFee()) {
-                //TODO: the max fee provided by the creator of the proposal is not high enough. Add refund = nMaxFee - txFee
-                continue;
-            }
-
-            //TODO: accept proposal and add refund = nMaxFee - nRequiredFee - txFee
+            // add the refund tx to the block
+            pblock->vtx.emplace_back(txRefund);
         }
+
+        // TODO: might have to update nLastBlockTx and nLastBlockSize
 
         nLastBlockTx = nBlockTx;
         nLastBlockSize = nBlockSize;
