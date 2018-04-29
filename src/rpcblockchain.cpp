@@ -323,8 +323,8 @@ Value createproposal(const Array& params, bool fHelp)
     std::string strDescription = params[4].get_str();
 
     Object results;
-    //TODO: max fee
-    CVoteProposal proposal(strName, nStartTime, nCheckSpan, strDescription, 0);
+    //TODO: max fee & refund address
+    CVoteProposal proposal(strName, nStartTime, nCheckSpan, strDescription, 0, "");
 
     //! Add the constructed proposal to a partial transaction
     CTransaction tx;

@@ -83,8 +83,9 @@ void CreateProposalDialog::on_button_CreateProposal_clicked()
         return;
     }
 
+    //TODO: refund address
     //Create the actual proposal
-    this->proposal = new CVoteProposal(strName.toStdString(), nStartHeight, nCheckSpan, strAbstract.toStdString(), nMaxFee);
+    this->proposal = new CVoteProposal(strName.toStdString(), nStartHeight, nCheckSpan, strAbstract.toStdString(), nMaxFee, "");
 
     //Set proposal hash in dialog
     uint256 hashProposal = proposal->GetHash();

@@ -10,6 +10,7 @@
 
 class CVoteProposal;
 class CTransaction;
+class CBitcoinAddress;
 
 //1. calculate fee for proposal
 //2. fee is a function of bits used and range with a restriction on start time
@@ -34,10 +35,15 @@ public:
     bool Add(const CVoteProposal& proposal);
     void Remove(const uint256& hashProposal);
     std::map<uint256, VoteLocation> GetActive(int nHeight);
+
+    //methods used in dynamic fee calculation
     bool GetFee(const CVoteProposal& proposal, int& nFee);
     bool GetDeterministicOrdering(const uint256& proofhash, std::vector<CTransaction>& vProposalTransactions,
                                     std::vector<CTransaction>& vOrderedProposalTransactions);
     bool GetNextLocation(int nBitCount, int nStartHeight, int nCheckSpan, VoteLocation& location);
+    bool GetRefundTransaction(const CVoteProposal &proposal, const int& nRequiredFee, const int& nTxFee,
+                              const bool bProposalAccepted, CTransaction &txRefund);
+
     std::map<uint256, CProposalMetaData> GetAllProposals() const { return mapProposalData; };
     bool CheckProposal (const CVoteProposal& proposal);
 };

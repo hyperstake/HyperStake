@@ -43,6 +43,9 @@ private:
 
     // description of the proposal; may link to additional transactions
     std::string strDescription;
+
+    // refund address
+    std::string strRefundAddress;
 public:
     // the amount of HYP burnt when a proposal is made
     static const int64 BASE_FEE = 5 * COIN;
@@ -55,6 +58,7 @@ public:
         nStartHeight = 0;
         nCheckSpan = 0;
         strDescription = "";
+        strRefundAddress = "";
     }
 
     bool IsNull () const { return strName.empty(); }
@@ -65,7 +69,7 @@ public:
     }
 
     CVoteProposal(std::string strName, unsigned int nStartHeight, unsigned int nCheckSpan, std::string strDescription,
-                  int nMaxFee, int nVersion = MOST_RECENT_VERSION)
+                  int nMaxFee, std::string strRefundAddress, int nVersion = MOST_RECENT_VERSION)
     {
         this->nVersion = nVersion;
         this->strName = strName;
@@ -73,6 +77,7 @@ public:
         this->nCheckSpan = nCheckSpan;
         this->strDescription = strDescription;
         this->nMaxFee = nMaxFee;
+        this->strRefundAddress = strRefundAddress;
 
         //VoteLocation will be set when the proposal is accepted by the network and the dynamic fee is determined
     }
@@ -81,6 +86,7 @@ public:
     CVoteProposal(std::string strName, unsigned int nStartHeight, unsigned int nCheckSpan, std::string strDescription,
                   VoteLocation location, int nVersion = MOST_RECENT_VERSION)
     {
+        SetNull();
         this->nVersion = nVersion;
         this->strName = strName;
         this->nStartHeight = nStartHeight;
@@ -98,6 +104,7 @@ public:
        READWRITE(nCheckSpan);
        READWRITE(strDescription);
        READWRITE(bitLocation);
+       READWRITE(strRefundAddress);
     )
 
     bool IsValid() const;
@@ -110,6 +117,7 @@ public:
     unsigned int GetStartHeight() const { return nStartHeight; }
     VoteLocation GetLocation() const { return bitLocation; }
     int GetMaxFee() const { return nMaxFee; }
+    std::string GetRefundAddress() const { return strRefundAddress; }
     uint256 GetHash() const;
 
     void SetLocation(VoteLocation location) { this->bitLocation = location; }
