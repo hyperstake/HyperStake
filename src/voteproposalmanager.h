@@ -41,8 +41,9 @@ public:
     bool GetDeterministicOrdering(const uint256& proofhash, std::vector<CTransaction>& vProposalTransactions,
                                     std::vector<CTransaction>& vOrderedProposalTransactions);
     bool GetNextLocation(int nBitCount, int nStartHeight, int nCheckSpan, VoteLocation& location);
-    bool GetRefundTransaction(const CVoteProposal &proposal, const int& nRequiredFee, const int& nTxFee,
-                              const bool bProposalAccepted, CTransaction &txRefund);
+    bool AddRefundToCoinBase(const CVoteProposal &proposal, const int &nRequiredFee, const int &nTxFee,
+                             const bool bProposalAccepted, CTransaction &txCoinBase);
+    bool CheckRefundTransaction(const std::vector<CTransaction> &vOrderedTxProposals, const CTransaction &txCoinBase);
 
     std::map<uint256, CProposalMetaData> GetAllProposals() const { return mapProposalData; };
     bool CheckProposal (const CVoteProposal& proposal);

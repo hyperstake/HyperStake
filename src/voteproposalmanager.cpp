@@ -152,8 +152,11 @@ namespace
         int nStart = proposal.GetStartHeight();
         int nEnd = proposal.GetStartHeight() + proposal.GetCheckSpan();
 
+        // An event is defined as either a proposal interval start or a proposal interval ending.
         vector<Event> vEvents(2 * vProposals.size());
 
+        // For each proposal in vProposals that overlaps with the given proposal, create a start and end event then
+        // add it to vEvents. This vector will be used to determine the number of overlapping voting intervals efficiently.
         for(auto proposalData: vProposals) {
             if(proposalData.nHeightEnd < nStart) continue;
             if(proposalData.nHeightStart > nEnd) continue;
@@ -165,8 +168,10 @@ namespace
             vEvents.emplace_back(endEvent);
         }
 
+        // sort the events so that those that happen earlier appear first in the vector
         sort(vEvents.begin(), vEvents.end(), Event::Compare);
 
+        // iterate through events in sorted order and keep a running counter of how many bits are consumed
         int nCurValueCounter = 0;
         for(unsigned int i = 0; i < vEvents.size() - 1; i++) {
             Event curEvent = vEvents.at(i);
@@ -174,10 +179,14 @@ namespace
 
             nCurValueCounter += curEvent.start ? curEvent.bitCount : -1 * curEvent.bitCount;
 
+            // only start the counter when we have entered the voting intervals of the given proposal
             if(nextEvent.position <= nStart) continue;
             if(curEvent.position > nEnd) break;
 
+            // the number of bits used is guaranteed to be constant for every block between these two events
             int gap = min(nEnd, nextEvent.position) - max(nStart, curEvent.position);
+
+            // TODO: heuristic updated; this is subject to change
             nHeuristic += (100000 * ((long) proposal.GetBitCount())) / (MAX_BITCOUNT - nCurValueCounter) * gap;
         }
 
@@ -251,20 +260,83 @@ bool CVoteProposalManager::GetDeterministicOrdering(const uint256 &proofhash, st
     return true;
 }
 
-bool CVoteProposalManager::GetRefundTransaction(const CVoteProposal &proposal, const int& nRequiredFee, const int& nTxFee,
-                                                const bool bProposalAccepted, CTransaction &txRefund)
+//TODO: MAX TRANSACTION SIZE CHECK
+bool CVoteProposalManager::AddRefundToCoinBase(const CVoteProposal &proposal, const int &nRequiredFee, const int &nTxFee,
+                                               const bool bProposalAccepted, CTransaction &txCoinBase)
 {
-    CBitcoinAddress refundAddress;
-    if(!refundAddress.SetString(proposal.GetRefundAddress())) {
-        return error("Refund Address of proposal is not valid");
+    if (!txCoinBase.IsCoinBase()) {
+        return error("AddRefundToCoinBase() : Given transaction is the a coinbase transaction.");
     }
 
-    txRefund.vin.resize(1);
-    txRefund.vin[0].prevout.SetNull();
+    CBitcoinAddress refundAddress;
+    if (!refundAddress.SetString(proposal.GetRefundAddress())) {
+        return error("AddRefundToCoinBase() : Refund Address of proposal is not valid");
+    }
 
-    txRefund.vout.resize(1);
-    txRefund.vout[0].scriptPubKey.SetDestination(refundAddress.Get());
-    txRefund.vout[0].nValue = bProposalAccepted ? proposal.GetMaxFee() - nRequiredFee - nTxFee : proposal.GetMaxFee() - nTxFee;
+    CTxOut refundTxOut;
+    refundTxOut.nValue = bProposalAccepted ? proposal.GetMaxFee() - nRequiredFee - nTxFee : proposal.GetMaxFee() - nTxFee;
+    refundTxOut.scriptPubKey.SetDestination(refundAddress.Get());
+    txCoinBase.vout.emplace_back(refundTxOut);
+
+    return true;
+}
+
+//TODO: REFACTOR AND COMMENT
+bool CVoteProposalManager::CheckRefundTransaction(const std::vector<CTransaction> &vOrderedTxProposals,
+                                                  const CTransaction &txCoinBase)
+{
+    if (!txCoinBase.IsCoinBase()) {
+        return error("CheckRefundTransaction() : Given transaction is not a coinbase.");
+    }
+
+    CTransaction txExpectedCoinBase;
+
+    for(auto txProposal: vOrderedTxProposals) {
+        // output variables
+        int nRequiredFee;
+        CVoteProposal proposal;
+        VoteLocation location;
+
+        // Skip this txProposal if a proposal object cannot be extracted from it
+        if(!ProposalFromTransaction(txProposal, proposal)) {
+            return error("CheckRefundTransaction() : Proposal was not able to be extracted from transaction.");
+        }
+
+        // input variables
+        int nTxFee = (int)MIN_TX_FEE; //TODO: MAKE THIS HIGHER
+        int nBitCount = proposal.GetBitCount();
+        int nStartHeight = proposal.GetStartHeight();
+        int nCheckSpan = proposal.GetCheckSpan();
+
+        // If a valid voting location cannot be found then create an unaccepted proposal refund
+        if(!GetNextLocation(nBitCount, nStartHeight, nCheckSpan, location)) {
+            AddRefundToCoinBase(proposal, nRequiredFee, nTxFee, false, txExpectedCoinBase);
+        } else {
+            // If a fee cannot be calculated then skip this proposal without creating a refund tx
+            proposal.SetLocation(location);
+            if (!GetFee(proposal, nRequiredFee)) {
+                return error("CheckRefundTransaction() : Calculating fee for proposal failed.");
+            }
+
+            // If the maximum fee provided by the proposal creator is less than the required fee
+            // then create an unaccepted proposal refund
+            if (nRequiredFee > proposal.GetMaxFee()) {
+                AddRefundToCoinBase(proposal, nRequiredFee, nTxFee, false, txExpectedCoinBase);
+            } else {
+                AddRefundToCoinBase(proposal, nRequiredFee, nTxFee, true, txExpectedCoinBase);
+            }
+        }
+    }
+
+    for(int i = 0; i < txCoinBase.vout.size(); i++) {
+        if(txCoinBase.vout.at(i).scriptPubKey.GetID().GetHex() != txExpectedCoinBase.vout.at(i).scriptPubKey.GetID().GetHex()) {
+            return error("CheckRefundTransaction() : The scriptPubKey of the refund transaction isn't what it should be.");
+        }
+
+        if(txCoinBase.vout.at(i).nValue != txExpectedCoinBase.vout.at(i).nValue) {
+            return error("CheckRefundTransaction() : The value of the refund isn't what it should be.");
+        }
+    }
 
     return true;
 }

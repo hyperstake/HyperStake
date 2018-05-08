@@ -1468,7 +1468,9 @@ bool CTransaction::ConnectInputs(CTxDB& txdb, MapPrevTx inputs,
             uint64 nCoinAge;
             if (!GetCoinAge(txdb, nCoinAge))
                 return error("ConnectInputs() : %s unable to get coin age for coinstake", GetHash().ToString().substr(0,10).c_str());
+
             int64 nStakeReward = GetValueOut() - nValueIn;
+
             if (nStakeReward > GetProofOfStakeReward(nCoinAge, pindexBlock->nBits, nTime, pindexBlock->nHeight) - GetMinFee() + MIN_TX_FEE)
                 return DoS(100, error("ConnectInputs() : %s stake reward exceeded", GetHash().ToString().substr(0,10).c_str()));
         }
@@ -1488,6 +1490,19 @@ bool CTransaction::ConnectInputs(CTxDB& txdb, MapPrevTx inputs,
             nFees += nTxFee;
             if (!MoneyRange(nFees))
                 return DoS(100, error("ConnectInputs() : nFees out of range"));
+        }
+    }
+    else {
+        CBlock block;
+        if (!block.ReadFromDisk(pindexBlock))
+            return error("ConnectInputs() : ReadFromDisk for connect failed");
+
+        vector<CTransaction> vtxProposals;
+        if (!proposalManager.GetDeterministicOrdering(pindexBlock->hashProofOfStake, block.vtx, vtxProposals))
+            return error("ConnectInputs() : Fetching deterministic ordering of tx proposals failed");
+
+        if (!proposalManager.CheckRefundTransaction(vtxProposals, *this)) {
+            return error("ConnectInputs() : Invalid refund outputs in coinbase transaction");
         }
     }
 
