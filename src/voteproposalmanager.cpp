@@ -297,13 +297,13 @@ bool CVoteProposalManager::CheckRefundTransaction(const std::vector<CTransaction
         CVoteProposal proposal;
         VoteLocation location;
 
-        // Skip this txProposal if a proposal object cannot be extracted from it
+        // return error if a proposal object cannot be extracted from the tx
         if(!ProposalFromTransaction(txProposal, proposal)) {
             return error("CheckRefundTransaction() : Proposal was not able to be extracted from transaction.");
         }
 
         // input variables
-        int nTxFee = (int)MIN_TX_FEE; //TODO: MAKE THIS HIGHER
+        int nTxFee = (int)CVoteProposal::BASE_FEE; //TODO: MAKE THIS HIGHER
         int nBitCount = proposal.GetBitCount();
         int nStartHeight = proposal.GetStartHeight();
         int nCheckSpan = proposal.GetCheckSpan();
@@ -312,7 +312,7 @@ bool CVoteProposalManager::CheckRefundTransaction(const std::vector<CTransaction
         if(!GetNextLocation(nBitCount, nStartHeight, nCheckSpan, location)) {
             AddRefundToCoinBase(proposal, nRequiredFee, nTxFee, false, txExpectedCoinBase);
         } else {
-            // If a fee cannot be calculated then skip this proposal without creating a refund tx
+            // If a fee cannot be calculated then return error
             proposal.SetLocation(location);
             if (!GetFee(proposal, nRequiredFee)) {
                 return error("CheckRefundTransaction() : Calculating fee for proposal failed.");
@@ -330,11 +330,55 @@ bool CVoteProposalManager::CheckRefundTransaction(const std::vector<CTransaction
 
     for(int i = 0; i < txCoinBase.vout.size(); i++) {
         if(txCoinBase.vout.at(i).scriptPubKey.GetID().GetHex() != txExpectedCoinBase.vout.at(i).scriptPubKey.GetID().GetHex()) {
-            return error("CheckRefundTransaction() : The scriptPubKey of the refund transaction isn't what it should be.");
+            return error("CheckRefundTransaction() : The scriptPubKey of the refund transaction isn't what it should be"
+                         "according to the deterministic ordering.");
         }
 
         if(txCoinBase.vout.at(i).nValue != txExpectedCoinBase.vout.at(i).nValue) {
-            return error("CheckRefundTransaction() : The value of the refund isn't what it should be.");
+            return error("CheckRefundTransaction() : The value of the refund isn't what it should be according to the"
+                         "deterministic ordering.");
+        }
+    }
+
+    return true;
+}
+
+bool CVoteProposalManager::GetAcceptedTxProposals(const CTransaction& txCoinBase, const std::vector<CTransaction>& vOrderedTxProposals,
+                          std::vector<CTransaction>& vAcceptedTxProposals)
+{
+    if (!txCoinBase.IsCoinBase()) {
+        return error("GetAcceptedTxProposals() : Given transaction is not a coinbase.");
+    }
+
+    vAcceptedTxProposals.clear();
+
+    for(auto txProposal: vOrderedTxProposals) {
+        // output variables
+        int nRequiredFee;
+        CVoteProposal proposal;
+        VoteLocation location;
+
+        // return error if a proposal object cannot be extracted from the tx
+        if(!ProposalFromTransaction(txProposal, proposal)) {
+            return error("GetAcceptedTxProposals() : Proposal was not able to be extracted from transaction.");
+        }
+
+        // input variables
+        int nBitCount = proposal.GetBitCount();
+        int nStartHeight = proposal.GetStartHeight();
+        int nCheckSpan = proposal.GetCheckSpan();
+
+        if(GetNextLocation(nBitCount, nStartHeight, nCheckSpan, location)){
+            // If a fee cannot be calculated then return error
+            proposal.SetLocation(location);
+            if (!GetFee(proposal, nRequiredFee)) {
+                return error("GetAcceptedTxProposals() : Calculating fee for proposal failed.");
+            }
+
+            // If the max fee provided by the txProposal exceeds the required fee the accept the tx as a valid proposal
+            if (nRequiredFee >= proposal.GetMaxFee()) {
+                vAcceptedTxProposals.emplace_back(txProposal);
+            }
         }
     }
 

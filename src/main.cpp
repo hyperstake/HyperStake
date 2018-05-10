@@ -1492,7 +1492,9 @@ bool CTransaction::ConnectInputs(CTxDB& txdb, MapPrevTx inputs,
                 return DoS(100, error("ConnectInputs() : nFees out of range"));
         }
     }
-    else {
+
+    // If the given transaction is coinbase then check for correct refund outputs
+    else if (VOTING_START >= pindexBlock->nHeight){
         CBlock block;
         if (!block.ReadFromDisk(pindexBlock))
             return error("ConnectInputs() : ReadFromDisk for connect failed");
@@ -1612,7 +1614,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
     else
         nTxPos = pindex->nBlockPos + ::GetSerializeSize(CBlock(), SER_DISK, CLIENT_VERSION) - (2 * GetSizeOfCompactSize(0)) + GetSizeOfCompactSize(vtx.size());
 
-    vector<uint256> vQueuedProposals;
+    vector<CTransaction> vQueuedTxProposals;
     map<uint256, CTxIndex> mapQueuedChanges;
     int64 nFees = 0;
     int64 nValueIn = 0;
@@ -1674,11 +1676,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
                     return error("Proposal was not successfully extracted from transaction. This shouldn't happen.");
                 }
 
-                int nFee = CVoteProposal::BASE_FEE;
-
-                //Needs to have the proper fee or else it will not be counted
-                if (nTxValueIn - nTxValueOut >= nFee - MIN_TXOUT_AMOUNT)
-                    vQueuedProposals.push_back(hashTx);
+                vQueuedTxProposals.push_back(tx);
             }
         }
 
@@ -1697,21 +1695,34 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
     if (fJustCheck)
         return true;
 
+    //TODO: LOG ERRORS OR TERMINATE METHOD AND RETURN ERROR?
+    vector<CTransaction> vOrderedTxProposals;
+    if(!proposalManager.GetDeterministicOrdering(pindex->pprev->hashProofOfStake, vQueuedTxProposals, vOrderedTxProposals)) {
+        printf("ConnectBlock() : encountered error when determining deterministic ordering of proposals.");
+    }
+
+    vector<CTransaction> vAcceptedTxProposals;
+    if(!proposalManager.GetAcceptedTxProposals(vtx[0], vOrderedTxProposals, vAcceptedTxProposals)) {
+        printf("ConnectBlock() : encountered error when extracting accepted proposals from coinbase");
+    }
+
     // Keep track of any vote proposals that were added to the blockchain
     CVoteDB voteDB;
-    if (vQueuedProposals.size()) {
-        for (const CTransaction& tx : vtx) {
-            uint256 txid = tx.GetHash();
-            if (count(vQueuedProposals.begin(), vQueuedProposals.end(), txid)) {
-                CVoteProposal proposal;
-                if (ProposalFromTransaction(tx, proposal)) {
-                    mapProposals[txid] = proposal.GetHash();
-                    if (!voteDB.WriteProposal(txid, proposal))
-                        printf("%s : failed to record proposal to db\n", __func__);
-                    else if (!proposalManager.Add(proposal))
-                        printf("%s: failed to add proposal %s to manager\n", __func__, txid.GetHex().c_str());
-                }
-            }
+    for (const CTransaction& txProposal: vAcceptedTxProposals) {
+
+        // if the proposal isn't able to be extracted from transaction then skip it
+        CVoteProposal proposal;
+        if(!ProposalFromTransaction(txProposal, proposal)) {
+            printf("Proposal was not successfully extracted from transaction. This shouldn't happen.");
+            continue;
+        }
+
+        // store proposal hash in mapProposals and store proposal on disk for later use
+        mapProposals[txProposal.GetHash()] = proposal.GetHash();
+        if (!voteDB.WriteProposal(txProposal.GetHash(), proposal)) {
+            printf("%s : failed to record proposal to db\n", __func__);
+        } else if (!proposalManager.Add(proposal)) {
+            printf("%s: failed to add proposal %s to manager\n", __func__, txProposal.GetHash().GetHex().c_str());
         }
     }
 
