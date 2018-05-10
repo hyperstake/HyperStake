@@ -1481,7 +1481,9 @@ bool CTransaction::ConnectInputs(CTxDB& txdb, MapPrevTx inputs,
                 return DoS(100, error("ConnectInputs() : nFees out of range"));
         }
     }
-    else {
+
+    // If the given transaction is coinbase then check for correct refund outputs
+    else if (VOTING_START >= pindexBlock->nHeight){
         CBlock block;
         if (!block.ReadFromDisk(pindexBlock))
             return error("ConnectInputs() : ReadFromDisk for connect failed");
@@ -1600,7 +1602,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
     else
         nTxPos = pindex->nBlockPos + ::GetSerializeSize(CBlock(), SER_DISK, CLIENT_VERSION) - (2 * GetSizeOfCompactSize(0)) + GetSizeOfCompactSize(vtx.size());
 
-    vector<uint256> vQueuedProposals;
+    vector<CTransaction> vQueuedTxProposals;
     map<uint256, CTxIndex> mapQueuedChanges;
     int64 nFees = 0;
     int64 nValueIn = 0;
@@ -1663,11 +1665,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
                     return error("Proposal was not successfully extracted from transaction. This shouldn't happen.");
                 }
 
-                int nFee = CVoteProposal::BASE_FEE;
-
-                //Needs to have the proper fee or else it will not be counted
-                if (nTxValueIn - nTxValueOut >= nFee - MIN_TXOUT_AMOUNT)
-                    vQueuedProposals.push_back(hashTx);
+                vQueuedTxProposals.push_back(tx);
             }
         }
 
@@ -1686,21 +1684,34 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
     if (fJustCheck)
         return true;
 
+    //TODO: LOG ERRORS OR TERMINATE METHOD AND RETURN ERROR?
+    vector<CTransaction> vOrderedTxProposals;
+    if(!proposalManager.GetDeterministicOrdering(pindex->pprev->hashProofOfStake, vQueuedTxProposals, vOrderedTxProposals)) {
+        printf("ConnectBlock() : encountered error when determining deterministic ordering of proposals.");
+    }
+
+    vector<CTransaction> vAcceptedTxProposals;
+    if(!proposalManager.GetAcceptedTxProposals(vtx[0], vOrderedTxProposals, vAcceptedTxProposals)) {
+        printf("ConnectBlock() : encountered error when extracting accepted proposals from coinbase");
+    }
+
     // Keep track of any vote proposals that were added to the blockchain
     CVoteDB voteDB;
-    BOOST_FOREACH (const CTransaction& tx, vtx) {
-        uint256 txid = tx.GetHash();
-        if (count(vQueuedProposals.begin(), vQueuedProposals.end(), txid)) {
-            CVoteProposal proposal;
-            if (ProposalFromTransaction(tx, proposal)) {
-                mapProposals[txid] = proposal.GetHash();
-                if (!voteDB.WriteProposal(txid, proposal)) {
-                    printf("%s : failed to record proposal to db\n", __func__);
-                } else {
-                    if (!proposalManager.Add(proposal))
-                        printf("%s: failed to add proposal %s to manager\n", __func__, txid.GetHex().c_str());
-                }
-            }
+    for (const CTransaction& txProposal: vAcceptedTxProposals) {
+
+        // if the proposal isn't able to be extracted from transaction then skip it
+        CVoteProposal proposal;
+        if(!ProposalFromTransaction(txProposal, proposal)) {
+            printf("Proposal was not successfully extracted from transaction. This shouldn't happen.");
+            continue;
+        }
+
+        // store proposal hash in mapProposals and store proposal on disk for later use
+        mapProposals[txProposal.GetHash()] = proposal.GetHash();
+        if (!voteDB.WriteProposal(txProposal.GetHash(), proposal)) {
+            printf("%s : failed to record proposal to db\n", __func__);
+        } else if (!proposalManager.Add(proposal)) {
+            printf("%s: failed to add proposal %s to manager\n", __func__, txProposal.GetHash().GetHex().c_str());
         }
     }
 
@@ -4504,55 +4515,58 @@ CBlock* CreateNewBlock(CWallet* pwallet, bool fProofOfStake)
             }
         }
 
-        vector<CTransaction> vProposalTransactions;
-        for(CTransaction tx: pblock->vtx) {
-            if(tx.IsProposal()) {
-                vProposalTransactions.emplace_back(tx);
-            }
-        }
-
         // TODO: ADD BLOCK HEIGHT FOR VOTING HARD FORK
         // TODO: MIGHT NEED TO CHECK BLOCK SIZE CONSTRAINTS
         // TODO: PUT THIS IN ANOTHER METHOD TO IMPROVE MODULARIZATION AND CODE REUSE
-        vector<CTransaction> vOrderedProposalTransactions;
-        proposalManager.GetDeterministicOrdering(pindexPrev->hashProofOfStake, vProposalTransactions, vOrderedProposalTransactions);
-        for(CTransaction txProposal: vOrderedProposalTransactions) {
-            // output variables
-            int nRequiredFee;
-            CVoteProposal proposal;
-            VoteLocation location;
-            CTransaction txCoinBase = pblock->vtx[0];
-
-            // Skip this txProposal if a proposal object cannot be extracted from it
-            if(!ProposalFromTransaction(txProposal, proposal)) {
-                continue;
+        if(pindexPrev->nHeight >= VOTING_START) {
+            vector<CTransaction> vProposalTransactions;
+            for(CTransaction tx: pblock->vtx) {
+                if(tx.IsProposal()) {
+                    vProposalTransactions.emplace_back(tx);
+                }
             }
 
-            // input variables
-            int nTxFee = (int)MIN_TX_FEE; //TODO: MAKE THIS HIGHER
-            int nBitCount = proposal.GetBitCount();
-            int nStartHeight = proposal.GetStartHeight();
-            int nCheckSpan = proposal.GetCheckSpan();
+            vector <CTransaction> vOrderedProposalTransactions;
+            proposalManager.GetDeterministicOrdering(pindexPrev->hashProofOfStake, vProposalTransactions,
+                                                     vOrderedProposalTransactions);
+            for (CTransaction txProposal: vOrderedProposalTransactions) {
+                // output variables
+                int nRequiredFee;
+                CVoteProposal proposal;
+                VoteLocation location;
+                CTransaction txCoinBase = pblock->vtx[0];
 
-            // If a valid voting location cannot be found then create an unaccepted proposal refund
-            if(!proposalManager.GetNextLocation(nBitCount, nStartHeight, nCheckSpan, location)) {
-                proposalManager.AddRefundToCoinBase(proposal, nRequiredFee, nTxFee, false, txCoinBase);
-            } else {
-                // If a fee cannot be calculated then skip this proposal without creating a refund tx
-                proposal.SetLocation(location);
-                if (!proposalManager.GetFee(proposal, nRequiredFee)) continue;
+                // Skip this txProposal if a proposal object cannot be extracted from it
+                if (!ProposalFromTransaction(txProposal, proposal)) {
+                    continue;
+                }
 
-                // If the maximum fee provided by the proposal creator is less than the required fee
-                // then create an unaccepted proposal refund
-                if (nRequiredFee > proposal.GetMaxFee()) {
+                // input variables
+                int nTxFee = CVoteProposal::BASE_FEE; //TODO: DETERMINE THE BEST VALUE FROM TRIALS
+                int nBitCount = proposal.GetBitCount();
+                int nStartHeight = proposal.GetStartHeight();
+                int nCheckSpan = proposal.GetCheckSpan();
+
+                // If a valid voting location cannot be found then create an unaccepted proposal refund
+                if (!proposalManager.GetNextLocation(nBitCount, nStartHeight, nCheckSpan, location)) {
                     proposalManager.AddRefundToCoinBase(proposal, nRequiredFee, nTxFee, false, txCoinBase);
                 } else {
-                    proposalManager.AddRefundToCoinBase(proposal, nRequiredFee, nTxFee, true, txCoinBase);
+                    // If a fee cannot be calculated then skip this proposal without creating a refund tx
+                    proposal.SetLocation(location);
+                    if (!proposalManager.GetFee(proposal, nRequiredFee)) continue;
+
+                    // If the maximum fee provided by the proposal creator is less than the required fee
+                    // then create an unaccepted proposal refund
+                    if (nRequiredFee > proposal.GetMaxFee()) {
+                        proposalManager.AddRefundToCoinBase(proposal, nRequiredFee, nTxFee, false, txCoinBase);
+                    } else {
+                        proposalManager.AddRefundToCoinBase(proposal, nRequiredFee, nTxFee, true, txCoinBase);
+                    }
                 }
             }
         }
 
-        // TODO: might have to update nLastBlockTx and nLastBlockSize
+        // TODO: might have to update nLastBlockTx and nLastBlockSize?
 
         nLastBlockTx = nBlockTx;
         nLastBlockSize = nBlockSize;
