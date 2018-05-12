@@ -1494,7 +1494,7 @@ bool CTransaction::ConnectInputs(CTxDB& txdb, MapPrevTx inputs,
     }
 
     // If the given transaction is coinbase then check for correct refund outputs
-    else if (VOTING_START >= pindexBlock->nHeight){
+    else if (pindexBlock->nHeight >= VOTING_START){
         CBlock block;
         if (!block.ReadFromDisk(pindexBlock))
             return error("ConnectInputs() : ReadFromDisk for connect failed");

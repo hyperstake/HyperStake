@@ -206,6 +206,8 @@ namespace
                 continue;
             vConflictingTime.emplace_back(data);
         }
+
+        return vConflictingTime;
     }
 }
 
@@ -420,4 +422,28 @@ bool CVoteProposalManager::GetNextLocation(int nBitCount, int nStartHeight, int 
         }
     }
     return false;
+}
+
+bool CVoteProposalManager::GetRefundOutputSize(const CTransaction& txProposal, int& nSize) const
+{
+
+    CTransaction txEmpty;
+    unsigned int nBaseSize = ::GetSerializeSize(txEmpty, SER_NETWORK, PROTOCOL_VERSION);
+
+    if (!txProposal.IsProposal()) {
+        return error("GetRefundOutputSize() : Given transaction must be a proposal.");
+    }
+
+    CVoteProposal proposal;
+    if (!ProposalFromTransaction(txProposal, proposal)) {
+        return error("GetRefundOutputSize() : Failed to extract proposal from transaction.");
+    }
+
+    // Every refund output should increase the size of the coinbase tx by the same amount.
+    // 0, 0, and false are just filler values.
+    proposalManager.AddRefundToCoinBase(proposal, 0, 0, false, txEmpty);
+
+    nSize = ::GetSerializeSize(txEmpty, SER_NETWORK, PROTOCOL_VERSION) - nBaseSize;
+
+    return true;
 }

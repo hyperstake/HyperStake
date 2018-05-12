@@ -78,6 +78,8 @@ public:
         this->strDescription = strDescription;
         this->nMaxFee = nMaxFee;
         this->strRefundAddress = strRefundAddress;
+        //VoteLocation location;
+        this->bitLocation = VoteLocation();
 
         //VoteLocation will be set when the proposal is accepted by the network and the dynamic fee is determined
     }
