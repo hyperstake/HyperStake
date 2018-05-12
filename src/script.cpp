@@ -1358,12 +1358,16 @@ bool Solver(const CScript& scriptPubKey, txnouttype& typeRet, vector<vector<unsi
 bool Sign1(const CKeyID& address, const CKeyStore& keystore, uint256 hash, int nHashType, CScript& scriptSigRet)
 {
     CKey key;
-    if (!keystore.GetKey(address, key))
+    if (!keystore.GetKey(address, key)) {
+        printf("could not find the right key ******************");
         return false;
+    }
 
     vector<unsigned char> vchSig;
-    if (!key.Sign(hash, vchSig))
+    if (!key.Sign(hash, vchSig)) {
+        printf("signing failed :( *****************");
         return false;
+    }
     vchSig.push_back((unsigned char)nHashType);
     scriptSigRet << vchSig;
 
@@ -1403,12 +1407,17 @@ bool Solver(const CKeyStore& keystore, const CScript& scriptPubKey, uint256 hash
     switch (whichTypeRet)
     {
     case TX_NONSTANDARD:
+        printf("****************** tx is not standard");
         return false;
     case TX_PUBKEY:
         keyID = CPubKey(vSolutions[0]).GetID();
+        printf("***************** tx is pubkey: %s", keyID.ToString());
+        printf("\n");
         return Sign1(keyID, keystore, hash, nHashType, scriptSigRet);
     case TX_PUBKEYHASH:
         keyID = CKeyID(uint160(vSolutions[0]));
+        printf("***************** tx is pubkeyhash: %s", uint160(vSolutions[0]));
+        printf("\n");
         if (!Sign1(keyID, keystore, hash, nHashType, scriptSigRet))
             return false;
         else
@@ -1419,13 +1428,16 @@ bool Solver(const CKeyStore& keystore, const CScript& scriptPubKey, uint256 hash
         }
         return true;
     case TX_SCRIPTHASH:
+        printf("***************** tx is scripthash");
         return keystore.GetCScript(uint160(vSolutions[0]), scriptSigRet);
 
     case TX_MULTISIG:
+        printf("***************** tx is multisig");
         scriptSigRet << OP_0; // workaround CHECKMULTISIG bug
         return (SignN(vSolutions, keystore, hash, nHashType, scriptSigRet));
     case TX_NULL_DATA:
-         return true;
+        printf("**************** tx is null data");
+        return true;
     }
     return false;
 }
@@ -1645,8 +1657,10 @@ bool SignSignature(const CKeyStore &keystore, const CScript& fromPubKey, CTransa
     uint256 hash = SignatureHash(fromPubKey, txTo, nIn, nHashType);
 
     txnouttype whichType;
-    if (!Solver(keystore, fromPubKey, hash, nHashType, txin.scriptSig, whichType))
+    if (!Solver(keystore, fromPubKey, hash, nHashType, txin.scriptSig, whichType)) {
+        printf("******************** solver failed :(");
         return false;
+    }
 
     if (whichType == TX_SCRIPTHASH)
     {

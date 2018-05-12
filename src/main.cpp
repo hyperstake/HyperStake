@@ -1483,7 +1483,7 @@ bool CTransaction::ConnectInputs(CTxDB& txdb, MapPrevTx inputs,
     }
 
     // If the given transaction is coinbase then check for correct refund outputs
-    else if (VOTING_START >= pindexBlock->nHeight){
+    else if (pindexBlock->nHeight >= VOTING_START){
         CBlock block;
         if (!block.ReadFromDisk(pindexBlock))
             return error("ConnectInputs() : ReadFromDisk for connect failed");
@@ -4433,6 +4433,18 @@ CBlock* CreateNewBlock(CWallet* pwallet, bool fProofOfStake)
 
             // Size limits
             unsigned int nTxSize = ::GetSerializeSize(tx, SER_NETWORK, PROTOCOL_VERSION);
+
+            // If the transaction is a proposal then the size of the refund output must be accounted for
+            if (pindexPrev->nHeight >= VOTING_START && tx.IsProposal()) {
+                int nRefundSize;
+                if (!proposalManager.GetRefundOutputSize(tx, nRefundSize)) {
+                    printf("Couldn't calculate refund output size for the given transaction.");
+                    continue;
+                }
+
+                nTxSize += nRefundSize;
+            }
+
             if (nBlockSize + nTxSize >= nBlockMaxSize)
                 continue;
 

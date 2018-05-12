@@ -46,6 +46,7 @@ public:
     bool CheckRefundTransaction(const std::vector<CTransaction> &vOrderedTxProposals, const CTransaction &txCoinBase);
     bool GetAcceptedTxProposals(const CTransaction& txCoinBase, const std::vector<CTransaction>& vOrderedTxProposals,
                                 std::vector<CTransaction>& vAcceptedTxProposals);
+    bool GetRefundOutputSize(const CTransaction& txProposal, int& nSize) const;
 
     std::map<uint256, CProposalMetaData> GetAllProposals() const { return mapProposalData; };
 };
