@@ -11,6 +11,23 @@ uint256 CVoteProposal::GetHash() const
     return SerializeHash(*this);
 }
 
+bool CVoteProposal::IsValid() const
+{
+    if (strName.empty() || strName.size() > MAX_CHAR_NAME) {
+        return error("Name needs to be between 1 and %d characters long", MAX_CHAR_NAME);
+    }
+
+    if (strDescription.empty() || strDescription.size() > MAX_CHAR_ABSTRACT) {
+        return error("Abstract needs to be between 1 and %d characters long", MAX_CHAR_ABSTRACT);
+    }
+
+    if (!nCheckSpan || nCheckSpan > MAX_CHECKSPAN) {
+        return error("Voting length needs to be between 1 and %d blocks", MAX_CHECKSPAN);
+    }
+
+    return true;
+}
+
 /**
 * The vote proposal is serialized and added to a CTransaction as a data object via OP_RETURN transaction output.
 * The transaction is marked as a proposal by marking the first 4 bytes as "PROP" in ASCII
@@ -63,7 +80,9 @@ bool ProposalFromTransaction(const CTransaction& tx, CVoteProposal& proposal)
     vector<unsigned char> vchProposal;
 
     CScript scriptProposal = tx.vout[0].scriptPubKey;
-    vchProposal.insert(vchProposal.end(), scriptProposal.begin() + 6, scriptProposal.end());
+
+    vchProposal.insert(vchProposal.end(), scriptProposal.begin() + (scriptProposal.size() > 0x04c ? 7 : 6), scriptProposal.end());
+
     CDataStream ss(vchProposal, SER_NETWORK, 0);
 
     try {

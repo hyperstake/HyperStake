@@ -1927,7 +1927,15 @@ bool CWallet::FinalizeProposal(CTransaction& txProposal)
     //! Choose coins to use
     set<pair<const CWalletTx*,unsigned int> > setCoins;
     int64 nValueIn = 0;
-    if (!SelectCoins(5 * COIN, GetTime(), setCoins, nValueIn, NULL) || nValueIn < CVoteProposal::FEE)
+
+    CVoteProposal proposal;
+    if(!ProposalFromTransaction(txProposal, proposal)) {
+        return error("Proposal was not successfully extracted from transaction. This shouldn't happen.");
+    }
+
+    int nFee = CVoteProposal::BASE_FEE;
+
+    if (!SelectCoins(5 * COIN, GetTime(), setCoins, nValueIn, NULL) || nValueIn < nFee)
         return error("Failed to select coins to spend");
 
     //! Select one of the addresses to send the change to, and add inputs to the proposal tx
@@ -1940,8 +1948,8 @@ bool CWallet::FinalizeProposal(CTransaction& txProposal)
     }
 
     //! Add change output
-    if (nValueIn > CVoteProposal::FEE + CENT) {
-        CTxOut out(nValueIn - CVoteProposal::FEE, scriptChange);
+    if (nValueIn > nFee + CENT) {
+        CTxOut out(nValueIn - nFee, scriptChange);
         txProposal.vout.push_back(out);
     }
 
@@ -2555,7 +2563,8 @@ bool CWallet::SendProposal(const CVoteProposal& proposal, uint256& txid)
 
     printf("*** after available coins\n");
 
-    int64 nFee = CVoteProposal::FEE;
+    int nFee = proposal.GetMaxFee();
+
     int64 nValueIn = 0;
 
     set<pair<const CWalletTx*,unsigned int> > setCoins;
@@ -2576,8 +2585,9 @@ bool CWallet::SendProposal(const CVoteProposal& proposal, uint256& txid)
         //!Lookup the address of one of the inputs and return the change to that address
         uint256 hashBlock;
         CTransaction txPrev;
-        if(!::GetTransaction(wtx.vin[0].prevout.hash, txPrev, hashBlock))
+        if(!::GetTransaction(wtx.vin[0].prevout.hash, txPrev, hashBlock)) {
             return error("%s: Failed to select coins", __func__);
+        }
 
         CScript scriptReturn = txPrev.vout[wtx.vin[0].prevout.n].scriptPubKey;
         CTxOut out(nChange, scriptReturn);
@@ -2589,14 +2599,16 @@ bool CWallet::SendProposal(const CVoteProposal& proposal, uint256& txid)
     //! Sign the transaction
     int nIn = 0;
     for (const pair<const CWalletTx*,unsigned int>& coin : setCoins) {
-        if (!SignSignature(*this, *coin.first, wtx, nIn++))
+        if (!SignSignature(*this, *coin.first, wtx, nIn++)) {
             return false;
+        }
     }
 
     //! Broadcast the transaction to the network
     CReserveKey reserveKey = CReserveKey(this);
-    if (!CommitTransaction(wtx, reserveKey))
+    if (!CommitTransaction(wtx, reserveKey)) {
         return error("%s: Failed to commit transaction", __func__);
+    }
 
     txid = wtx.GetHash();
 

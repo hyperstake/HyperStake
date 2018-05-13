@@ -1326,12 +1326,14 @@ bool Solver(const CScript& scriptPubKey, txnouttype& typeRet, vector<vector<unsi
 bool Sign1(const CKeyID& address, const CKeyStore& keystore, uint256 hash, int nHashType, CScript& scriptSigRet)
 {
     CKey key;
-    if (!keystore.GetKey(address, key))
+    if (!keystore.GetKey(address, key)) {
         return false;
+    }
 
     vector<unsigned char> vchSig;
-    if (!key.Sign(hash, vchSig))
+    if (!key.Sign(hash, vchSig)) {
         return false;
+    }
     vchSig.push_back((unsigned char)nHashType);
     scriptSigRet << vchSig;
 
@@ -1393,7 +1395,7 @@ bool Solver(const CKeyStore& keystore, const CScript& scriptPubKey, uint256 hash
         scriptSigRet << OP_0; // workaround CHECKMULTISIG bug
         return (SignN(vSolutions, keystore, hash, nHashType, scriptSigRet));
     case TX_NULL_DATA:
-         return true;
+        return true;
     }
     return false;
 }
@@ -1613,8 +1615,9 @@ bool SignSignature(const CKeyStore &keystore, const CScript& fromPubKey, CTransa
     uint256 hash = SignatureHash(fromPubKey, txTo, nIn, nHashType);
 
     txnouttype whichType;
-    if (!Solver(keystore, fromPubKey, hash, nHashType, txin.scriptSig, whichType))
+    if (!Solver(keystore, fromPubKey, hash, nHashType, txin.scriptSig, whichType)) {
         return false;
+    }
 
     if (whichType == TX_SCRIPTHASH)
     {

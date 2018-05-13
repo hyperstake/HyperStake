@@ -5,6 +5,7 @@
 #include "walletmodel.h"
 #include "voteproposal.h"
 #include "voteobject.h"
+#include "base58.h"
 #include <QLineEdit>
 #include <QMessageBox>
 
@@ -61,23 +62,38 @@ void CreateProposalDialog::on_button_CreateProposal_clicked()
         return;
     }
 
+    int nMaxFee = ui->lineEdit_Max_Fee->text().toInt();
+    if (nMaxFee < CVoteProposal::BASE_FEE) {
+        QMessageBox msg;
+        msg.setText(tr("Max Fee must be greater than or equal to %1").arg(CVoteProposal::BASE_FEE));
+        msg.exec();
+        return;
+    }
+
+    std::string strRefundAddress = ui->lineEdit_Refund_Address->text().toStdString();
+    CBitcoinAddress address;
+    if (strRefundAddress.empty() || !address.SetString(strRefundAddress)) {
+        QMessageBox msg;
+        msg.setText(tr("The provided refund address is invalid"));
+        msg.exec();
+        return;
+    }
+
     //Right now only supporting 2 bit votes
     int nBitCount = 2;
     QString strSize = QString::number(nBitCount);
     ui->label_Size_result->setText(strSize);
 
-    //Set bit location in dialog
     VoteLocation location;
-    if (!proposalManager.GetNextLocation(nBitCount, nStartHeight, nCheckSpan, location)) {
+    if(!proposalManager.GetNextLocation(nBitCount, nStartHeight, nCheckSpan, location)) {
         QMessageBox msg;
-        msg.setText(tr("Failed to get next location from the proposal manager"));
+        msg.setText(tr("The specified voting span is already full. Try a different start and span."));
         msg.exec();
         return;
     }
-    ui->label_Location_result->setText(QString::number(location.nLeastSignificantBit));
 
     //Create the actual proposal
-    this->proposal = new CVoteProposal(strName.toStdString(), nStartHeight, nCheckSpan, strAbstract.toStdString(), location);
+    this->proposal = new CVoteProposal(strName.toStdString(), nStartHeight, nCheckSpan, strAbstract.toStdString(), nMaxFee, strRefundAddress);
 
     //Set proposal hash in dialog
     uint256 hashProposal = proposal->GetHash();
@@ -112,9 +128,6 @@ void CreateProposalDialog::Clear()
     ui->lineEdit_Length->clear();
     ui->lineEdit_Name->clear();
     ui->lineEdit_StartBlock->clear();
-    ui->label_Fee_result->setText(QString::fromStdString(FormatMoney(CVoteProposal::FEE)));
     ui->label_Hash_result->setText("(Automatically Generated)");
-    ui->label_Location_result->setText("(Automatically Generated)");
-    ui->label_Location_result->setText("(Automatically Generated)");
     ui->button_SendProposal->setEnabled(false);
 }
