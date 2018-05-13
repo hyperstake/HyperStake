@@ -38,7 +38,7 @@ public:
 
     //methods used in dynamic fee calculation
     bool GetFee(const CVoteProposal& proposal, int& nFee);
-    bool GetDeterministicOrdering(const uint256& proofhash, std::vector<CTransaction>& vProposalTransactions,
+    bool GetDeterministicOrdering(const uint256& proofhash, std::vector<CTransaction> vProposalTransactions,
                                     std::vector<CTransaction>& vOrderedProposalTransactions);
     bool GetNextLocation(int nBitCount, int nStartHeight, int nCheckSpan, VoteLocation& location);
     bool AddRefundToCoinBase(const CVoteProposal &proposal, const int &nRequiredFee, const int &nTxFee,

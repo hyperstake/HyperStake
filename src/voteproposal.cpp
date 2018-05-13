@@ -21,10 +21,6 @@ bool CVoteProposal::IsValid() const
         return error("Abstract needs to be between 1 and %d characters long", MAX_CHAR_ABSTRACT);
     }
 
-    if (nStartHeight <= nBestHeight || nStartHeight > nBestHeight + MAX_BLOCKS_IN_FUTURE) {
-        return error("Start height needs to be greater than current height (%d) and less than %d.", nBestHeight, (nStartHeight + MAX_BLOCKS_IN_FUTURE));
-    }
-
     if (!nCheckSpan || nCheckSpan > MAX_CHECKSPAN) {
         return error("Voting length needs to be between 1 and %d blocks", MAX_CHECKSPAN);
     }
@@ -84,7 +80,9 @@ bool ProposalFromTransaction(const CTransaction& tx, CVoteProposal& proposal)
     vector<unsigned char> vchProposal;
 
     CScript scriptProposal = tx.vout[0].scriptPubKey;
-    vchProposal.insert(vchProposal.end(), scriptProposal.begin() + 6, scriptProposal.end());
+
+    vchProposal.insert(vchProposal.end(), scriptProposal.begin() + (scriptProposal.size() > 0x04c ? 7 : 6), scriptProposal.end());
+
     CDataStream ss(vchProposal, SER_NETWORK, 0);
 
     try {

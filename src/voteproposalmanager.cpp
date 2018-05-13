@@ -202,15 +202,14 @@ bool CVoteProposalManager::GetFee(const CVoteProposal& proposal, int& nFee)
     return true;
 }
 
-bool CVoteProposalManager::GetDeterministicOrdering(const uint256 &proofhash, std::vector<CTransaction> &vProposalTransactions,
+bool CVoteProposalManager::GetDeterministicOrdering(const uint256 &proofhash, std::vector<CTransaction> vProposalTransactions,
                                                     std::vector<CTransaction> &vOrderedProposalTransactions)
 {
-    int nMask = 0x000FFFFF;
-    int nSegmentSize = 20;
+    uint256 nMask(0x000FFFFF);
     int nSegmentOffset = 0;
     while(!vProposalTransactions.empty()) {
-        uint256 nFormattedMask = nMask << (nSegmentOffset * nSegmentSize);
-        int segment = (int)((proofhash & nFormattedMask) >> (nSegmentOffset * nSegmentOffset)).Get64();
+        uint256 nFormattedMask = nMask << (nSegmentOffset);
+        int segment = (int)((proofhash & nFormattedMask) >> (nSegmentOffset)).Get64();
         int index = (int)(segment % vProposalTransactions.size());
 
         if(segment < 0 || index < 0) {
@@ -218,9 +217,9 @@ bool CVoteProposalManager::GetDeterministicOrdering(const uint256 &proofhash, st
         }
 
         vOrderedProposalTransactions.emplace_back(vProposalTransactions.at(index));
-        vProposalTransactions.erase(vProposalTransactions.begin() + index);
 
-        nSegmentOffset = (nSegmentOffset + nSegmentSize) % 256;
+        vProposalTransactions.erase(vProposalTransactions.begin() + index);
+        nSegmentOffset = (nSegmentOffset + segment) % 235;
     }
 
     return true;
@@ -256,6 +255,9 @@ bool CVoteProposalManager::CheckRefundTransaction(const std::vector<CTransaction
     }
 
     CTransaction txExpectedCoinBase;
+    txExpectedCoinBase.vin.resize(1);
+    txExpectedCoinBase.vin[0].prevout.SetNull();
+    txExpectedCoinBase.vout.resize(1);
 
     for(auto txProposal: vOrderedTxProposals) {
         // output variables
@@ -292,6 +294,10 @@ bool CVoteProposalManager::CheckRefundTransaction(const std::vector<CTransaction
                 AddRefundToCoinBase(proposal, nRequiredFee, nTxFee, true, txExpectedCoinBase);
             }
         }
+    }
+
+    if (txCoinBase.vout.size() != txExpectedCoinBase.vout.size()) {
+        return error("CheckRefundTransaction() : The output vector of the coinbase transaction isn't the correct size.");
     }
 
     for(int i = 0; i < txCoinBase.vout.size(); i++) {

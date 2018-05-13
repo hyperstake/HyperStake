@@ -333,11 +333,19 @@ bool CTransaction::IsProposal() const
     for (unsigned int i = 0; i < vout.size(); i++) {
         CScript scriptPubKey = vout[i].scriptPubKey;
         if (scriptPubKey.IsDataCarrier()) {
-            if (scriptPubKey.size() >= 5) {
+            if (scriptPubKey.size() > 0x4c) {
+                // "PROP" in ascii
+                if (scriptPubKey.at(3) == 0x70 && scriptPubKey.at(4) == 0x72 && scriptPubKey.at(5) == 0x6f &&
+                        scriptPubKey.at(6) == 0x70) {
+                    return true;
+                }
+            }
+            else if(scriptPubKey.size() > 6) {
                 // "PROP" in ascii
                 if (scriptPubKey.at(2) == 0x70 && scriptPubKey.at(3) == 0x72 && scriptPubKey.at(4) == 0x6f &&
-                        scriptPubKey.at(5) == 0x70)
+                        scriptPubKey.at(5) == 0x70) {
                     return true;
+                }
             }
         }
     }
