@@ -405,6 +405,57 @@ CBlock* CreateNewBlock(CWallet* pwallet, bool fProofOfStake)
             }
         }
 
+        // TODO: ADD BLOCK HEIGHT FOR VOTING HARD FORK
+        // TODO: MIGHT NEED TO CHECK BLOCK SIZE CONSTRAINTS
+        // TODO: PUT THIS IN ANOTHER METHOD TO IMPROVE MODULARIZATION AND CODE REUSE
+        if(pindexPrev->nHeight >= VOTING_START) {
+            std::vector<CTransaction> vProposalTransactions;
+            for(CTransaction tx: pblock->vtx) {
+                if(tx.IsProposal()) {
+                    vProposalTransactions.emplace_back(tx);
+                }
+            }
+
+            std::vector <CTransaction> vOrderedProposalTransactions;
+            proposalManager.GetDeterministicOrdering(pindexPrev->hashProofOfStake, vProposalTransactions,
+                                                     vOrderedProposalTransactions);
+            for (CTransaction txProposal: vOrderedProposalTransactions) {
+                // output variables
+                int nRequiredFee;
+                CVoteProposal proposal;
+                VoteLocation location;
+                CTransaction txCoinBase = pblock->vtx[0];
+
+                // Skip this txProposal if a proposal object cannot be extracted from it
+                if (!ProposalFromTransaction(txProposal, proposal)) {
+                    continue;
+                }
+
+                // input variables
+                int nTxFee = CVoteProposal::BASE_FEE; //TODO: DETERMINE THE BEST VALUE FROM TRIALS
+                int nBitCount = proposal.GetBitCount();
+                int nStartHeight = proposal.GetStartHeight();
+                int nCheckSpan = proposal.GetCheckSpan();
+
+                // If a valid voting location cannot be found then create an unaccepted proposal refund
+                if (!proposalManager.GetNextLocation(nBitCount, nStartHeight, nCheckSpan, location)) {
+                    proposalManager.AddRefundToCoinBase(proposal, nRequiredFee, nTxFee, false, txCoinBase);
+                } else {
+                    // If a fee cannot be calculated then skip this proposal without creating a refund tx
+                    proposal.SetLocation(location);
+                    if (!proposalManager.GetFee(proposal, nRequiredFee)) continue;
+
+                    // If the maximum fee provided by the proposal creator is less than the required fee
+                    // then create an unaccepted proposal refund
+                    if (nRequiredFee > proposal.GetMaxFee()) {
+                        proposalManager.AddRefundToCoinBase(proposal, nRequiredFee, nTxFee, false, txCoinBase);
+                    } else {
+                        proposalManager.AddRefundToCoinBase(proposal, nRequiredFee, nTxFee, true, txCoinBase);
+                    }
+                }
+            }
+        }
+
         nLastBlockTx = nBlockTx;
         nLastBlockSize = nBlockSize;
 
